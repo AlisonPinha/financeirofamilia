@@ -51,7 +51,7 @@ const mockAccounts: Account[] = [
 // Mock members
 const mockMembers: User[] = [
   { id: "1", name: "Alison", email: "alison@familia.com", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alison", createdAt: new Date(), updatedAt: new Date() },
-  { id: "2", name: "Esposa", email: "esposa@familia.com", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Maria", createdAt: new Date(), updatedAt: new Date() },
+  { id: "2", name: "Fernanda", email: "fernanda@familia.com", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Fernanda", createdAt: new Date(), updatedAt: new Date() },
 ]
 
 // Mock transactions
@@ -62,6 +62,7 @@ const mockTransactions: TransactionWithExtras[] = [
     amount: 8000,
     type: "income",
     date: new Date("2026-01-05"),
+    ownership: "household",  // Receita da casa
     userId: "1",
     categoryId: "1",
     accountId: "1",
@@ -77,6 +78,7 @@ const mockTransactions: TransactionWithExtras[] = [
     amount: 2500,
     type: "expense",
     date: new Date("2026-01-03"),
+    ownership: "household",  // Despesa da casa
     userId: "1",
     categoryId: "5",
     accountId: "1",
@@ -92,6 +94,7 @@ const mockTransactions: TransactionWithExtras[] = [
     amount: 650,
     type: "expense",
     date: new Date("2026-01-02"),
+    ownership: "household",  // Despesa da casa
     userId: "2",
     categoryId: "6",
     accountId: "2",
@@ -107,6 +110,7 @@ const mockTransactions: TransactionWithExtras[] = [
     amount: 2500,
     type: "income",
     date: new Date("2026-01-01"),
+    ownership: "household",  // Receita da casa
     userId: "1",
     categoryId: "2",
     accountId: "1",
@@ -122,6 +126,7 @@ const mockTransactions: TransactionWithExtras[] = [
     amount: 85,
     type: "expense",
     date: new Date("2025-12-28"),
+    ownership: "household",  // Despesa da casa (assinatura compartilhada)
     userId: "2",
     categoryId: "12",
     accountId: "3",
@@ -138,6 +143,7 @@ const mockTransactions: TransactionWithExtras[] = [
     type: "expense",
     date: new Date("2026-01-06"),
     notes: "Parcela do iPhone 15 Pro Max",
+    ownership: "personal",  // Pessoal do Alison
     userId: "1",
     categoryId: "11",
     accountId: "3",
@@ -154,6 +160,7 @@ const mockTransactions: TransactionWithExtras[] = [
     amount: 280,
     type: "expense",
     date: new Date("2026-01-04"),
+    ownership: "household",  // Despesa da casa
     userId: "1",
     categoryId: "7",
     accountId: "1",
@@ -165,10 +172,11 @@ const mockTransactions: TransactionWithExtras[] = [
   },
   {
     id: "8",
-    description: "Salário Esposa",
+    description: "Salário Fernanda",
     amount: 6000,
     type: "income",
     date: new Date("2026-01-05"),
+    ownership: "household",  // Receita da casa
     userId: "2",
     categoryId: "1",
     accountId: "2",
@@ -184,6 +192,7 @@ const mockTransactions: TransactionWithExtras[] = [
     amount: 280,
     type: "expense",
     date: new Date("2026-01-08"),
+    ownership: "household",  // Despesa da casa
     userId: "2",
     categoryId: "5",
     accountId: "2",
@@ -200,12 +209,29 @@ const mockTransactions: TransactionWithExtras[] = [
     amount: 150,
     type: "expense",
     date: new Date("2026-01-02"),
+    ownership: "personal",  // Pessoal do Alison
     userId: "1",
     categoryId: "8",
     accountId: "1",
     category: mockCategories[7],
     account: mockAccounts[0],
     user: mockMembers[0],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: "11",
+    description: "Roupa Nova",
+    amount: 320,
+    type: "expense",
+    date: new Date("2026-01-07"),
+    ownership: "personal",  // Pessoal da Fernanda
+    userId: "2",
+    categoryId: "11",
+    accountId: "2",
+    category: mockCategories[10],
+    account: mockAccounts[1],
+    user: mockMembers[1],
     createdAt: new Date(),
     updatedAt: new Date(),
   },
@@ -217,6 +243,7 @@ export default function TransacoesPage() {
   const [filters, setFilters] = useState<TransactionFilters>({
     type: "all",
     categories: [],
+    ownership: "all",
     tags: [],
   })
 
@@ -256,6 +283,11 @@ export default function TransacoesPage() {
 
       // Member filter
       if (filters.memberId && transaction.userId !== filters.memberId) {
+        return false
+      }
+
+      // Ownership filter
+      if (filters.ownership && filters.ownership !== "all" && transaction.ownership !== filters.ownership) {
         return false
       }
 

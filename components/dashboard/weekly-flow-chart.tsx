@@ -25,6 +25,45 @@ interface WeeklyFlowChartProps {
   data: WeeklyData[]
 }
 
+interface TooltipPayload {
+  name: string
+  value: number
+  dataKey: string
+  color: string
+}
+
+interface CustomTooltipProps {
+  active?: boolean
+  payload?: TooltipPayload[]
+  label?: string
+}
+
+const nameLabels: Record<string, string> = {
+  income: "Receitas",
+  expense: "Despesas",
+  trend: "Saldo Acumulado",
+}
+
+function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
+  if (!active || !payload || !payload.length) return null
+
+  return (
+    <div className="bg-popover text-popover-foreground border border-border rounded-lg px-3 py-2 shadow-lg">
+      <p className="font-semibold text-sm mb-1">{label}</p>
+      {payload.map((entry, index) => (
+        <div key={index} className="flex items-center gap-2">
+          <div
+            className="w-3 h-3 rounded-sm"
+            style={{ backgroundColor: entry.color }}
+          />
+          <span className="text-sm">{nameLabels[entry.dataKey] || entry.name}:</span>
+          <span className="font-bold">{formatCurrency(entry.value)}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export function WeeklyFlowChart({ data }: WeeklyFlowChartProps) {
   // Calculate cumulative balance (trend line)
   let cumulative = 0
@@ -90,22 +129,7 @@ export function WeeklyFlowChart({ data }: WeeklyFlowChartProps) {
                   }).format(value)
                 }
               />
-              <Tooltip
-                formatter={(value, name) => [
-                  formatCurrency(Number(value)),
-                  name === "income"
-                    ? "Receitas"
-                    : name === "expense"
-                    ? "Despesas"
-                    : "Tendência",
-                ]}
-                contentStyle={{
-                  backgroundColor: "hsl(var(--card))",
-                  border: "1px solid hsl(var(--border))",
-                  borderRadius: "var(--radius)",
-                }}
-                labelStyle={{ fontWeight: 600 }}
-              />
+              <Tooltip content={<CustomTooltip />} />
               <Legend
                 verticalAlign="top"
                 height={36}

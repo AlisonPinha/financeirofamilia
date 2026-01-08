@@ -12,6 +12,7 @@ import {
   MonthlyComparison,
   TopExpenses,
   CoupleRanking,
+  PersonalExpensesSummary,
 } from "@/components/dashboard"
 import { useStore } from "@/hooks/use-store"
 import type { Transaction, Goal, Account } from "@/types"
@@ -81,7 +82,7 @@ const mockTransactions: Transaction[] = [
     userId: "2",
     categoryId: "6",
     category: { id: "6", name: "Alimentação", type: "expense", color: "#FF9500", userId: "2", createdAt: new Date(), updatedAt: new Date() },
-    user: { id: "2", name: "Esposa", email: "esposa@familia.com", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Maria", createdAt: new Date(), updatedAt: new Date() },
+    user: { id: "2", name: "Fernanda", email: "fernanda@familia.com", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Fernanda", createdAt: new Date(), updatedAt: new Date() },
     createdAt: new Date(),
     updatedAt: new Date(),
   },
@@ -107,7 +108,7 @@ const mockTransactions: Transaction[] = [
     userId: "2",
     categoryId: "11",
     category: { id: "11", name: "Assinaturas", type: "expense", color: "#8E8E93", userId: "2", createdAt: new Date(), updatedAt: new Date() },
-    user: { id: "2", name: "Esposa", email: "esposa@familia.com", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Maria", createdAt: new Date(), updatedAt: new Date() },
+    user: { id: "2", name: "Fernanda", email: "fernanda@familia.com", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Fernanda", createdAt: new Date(), updatedAt: new Date() },
     createdAt: new Date(),
     updatedAt: new Date(),
   },
@@ -309,8 +310,8 @@ const mockCoupleRanking = {
     },
     {
       id: "2",
-      name: "Esposa",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Maria",
+      name: "Fernanda",
+      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Fernanda",
       savedAmount: 165,
       unnecessarySpent: 435,
       streak: 1,
@@ -318,6 +319,26 @@ const mockCoupleRanking = {
     },
   ],
   categoryName: "Delivery",
+}
+
+// Mock data for Personal Expenses Summary
+const mockPersonalExpensesData = {
+  members: [
+    {
+      id: "1",
+      name: "Alison",
+      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alison",
+      personalExpense: 450, // Academia + outras despesas pessoais
+    },
+    {
+      id: "2",
+      name: "Fernanda",
+      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Fernanda",
+      personalExpense: 620, // Roupas + outras despesas pessoais
+    },
+  ],
+  householdExpense: 6780, // Aluguel, Supermercado, Contas, etc.
+  totalExpense: 7850,
 }
 
 export default function DashboardPage() {
@@ -385,14 +406,17 @@ export default function DashboardPage() {
         {/* Insights Row 2 - Monthly Comparison (full width) */}
         <MonthlyComparison data={mockComparisonData} />
 
-        {/* Insights Row 3 - Top Expenses and Couple Ranking */}
+        {/* Insights Row 3 - Top Expenses and Personal Expenses */}
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Top Expenses */}
           <TopExpenses {...mockTopExpenses} />
 
-          {/* Couple Ranking */}
-          <CoupleRanking {...mockCoupleRanking} />
+          {/* Personal vs Household Expenses */}
+          <PersonalExpensesSummary {...mockPersonalExpensesData} />
         </div>
+
+        {/* Insights Row 4 - Couple Ranking */}
+        <CoupleRanking {...mockCoupleRanking} />
       </div>
     </div>
   )

@@ -30,15 +30,15 @@ async function main() {
     },
   })
 
-  const esposa = await prisma.user.create({
+  const fernanda = await prisma.user.create({
     data: {
-      nome: "Esposa",
-      email: "esposa@familia.com",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Maria",
+      nome: "Fernanda",
+      email: "fernanda@familia.com",
+      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Fernanda",
     },
   })
 
-  console.log("👥 Usuários criados:", alison.nome, esposa.nome)
+  console.log("👥 Usuários criados:", alison.nome, fernanda.nome)
 
   // ============================================
   // CATEGORIAS
@@ -254,7 +254,7 @@ async function main() {
       saldoInicial: 3000,
       cor: "#f97316",
       icone: "Wallet",
-      userId: esposa.id,
+      userId: fernanda.id,
     },
   })
 
@@ -324,13 +324,13 @@ async function main() {
     }),
     prisma.transaction.create({
       data: {
-        descricao: "Salário Esposa",
+        descricao: "Salário Fernanda",
         valor: 6000,
         tipo: "ENTRADA",
         data: dataNoMes(mesAtual, 10),
         categoryId: categoriaMap["Salário"].id,
         accountId: contaItau.id,
-        userId: esposa.id,
+        userId: fernanda.id,
         recorrente: true,
         tags: [],
       },
@@ -395,7 +395,7 @@ async function main() {
         data: dataNoMes(mesAtual, 7),
         categoryId: categoriaMap["Alimentação"].id,
         accountId: cartaoNubank.id,
-        userId: esposa.id,
+        userId: fernanda.id,
         tags: [],
       },
     }),
@@ -407,7 +407,7 @@ async function main() {
         data: dataNoMes(mesAtual, 14),
         categoryId: categoriaMap["Alimentação"].id,
         accountId: cartaoNubank.id,
-        userId: esposa.id,
+        userId: fernanda.id,
         tags: [],
       },
     }),
@@ -419,7 +419,7 @@ async function main() {
         data: dataNoMes(mesAtual, 21),
         categoryId: categoriaMap["Alimentação"].id,
         accountId: cartaoNubank.id,
-        userId: esposa.id,
+        userId: fernanda.id,
         tags: [],
       },
     }),
@@ -482,7 +482,7 @@ async function main() {
         data: dataNoMes(mesAtual, 16),
         categoryId: categoriaMap["Lazer"].id,
         accountId: cartaoNubank.id,
-        userId: esposa.id,
+        userId: fernanda.id,
         tags: [],
       },
     }),
@@ -545,7 +545,7 @@ async function main() {
         data: dataNoMes(mesAtual, 19),
         categoryId: categoriaMap["Compras"].id,
         accountId: cartaoNubank.id,
-        userId: esposa.id,
+        userId: fernanda.id,
         tags: [],
       },
     }),
@@ -591,13 +591,13 @@ async function main() {
     }),
     prisma.transaction.create({
       data: {
-        descricao: "Salário Esposa",
+        descricao: "Salário Fernanda",
         valor: 6000,
         tipo: "ENTRADA",
         data: dataNoMes(mesPassado, 10),
         categoryId: categoriaMap["Salário"].id,
         accountId: contaItau.id,
-        userId: esposa.id,
+        userId: fernanda.id,
         tags: [],
       },
     }),
@@ -623,7 +623,7 @@ async function main() {
         data: dataNoMes(mesPassado, 10),
         categoryId: categoriaMap["Alimentação"].id,
         accountId: cartaoNubank.id,
-        userId: esposa.id,
+        userId: fernanda.id,
         tags: [],
       },
     }),
@@ -718,7 +718,7 @@ async function main() {
         valorAtual: 5250,
         rentabilidade: 5.0,
         dataAplicacao: new Date("2024-06-01"),
-        userId: esposa.id,
+        userId: fernanda.id,
       },
     }),
   ])
@@ -767,7 +767,7 @@ async function main() {
         valorAtual: 1150,
         categoryId: categoriaMap["Alimentação"].id,
         prazo: new Date(mesAtual.getFullYear(), mesAtual.getMonth() + 1, 0),
-        userId: esposa.id,
+        userId: fernanda.id,
       },
     }),
     prisma.goal.create({

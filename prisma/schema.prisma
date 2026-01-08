@@ -53,6 +53,11 @@ enum GoalType {
   REGRA_PERCENTUAL
 }
 
+enum OwnershipType {
+  CASA      // Despesa da casa/família
+  PESSOAL   // Despesa pessoal do membro
+}
+
 // ============================================
 // MODELS
 // ============================================
@@ -119,6 +124,7 @@ model Transaction {
   tags           String[]        // PostgreSQL suporta arrays nativos
   anexoUrl       String?
   notas          String?
+  ownership      OwnershipType   @default(CASA)  // Casa ou Pessoal
   categoryId     String?
   accountId      String?
   userId         String

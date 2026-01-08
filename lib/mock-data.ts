@@ -304,9 +304,9 @@ export const mockFamilyMembers: FamilyMember[] = [
   },
   {
     id: "2",
-    name: "Esposa",
-    email: "esposa@familia.com",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Maria",
+    name: "Fernanda",
+    email: "fernanda@familia.com",
+    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Fernanda",
     role: "member",
   },
 ]
@@ -409,9 +409,9 @@ export const mockConfigFamilyMembers: ConfigFamilyMember[] = [
   },
   {
     id: "2",
-    name: "Esposa",
-    email: "esposa@familia.com",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Maria",
+    name: "Fernanda",
+    email: "fernanda@familia.com",
+    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Fernanda",
     isAdmin: false,
   },
 ]

@@ -10,6 +10,8 @@ import {
   Copy,
   Trash2,
   Paperclip,
+  Home,
+  User,
 } from "lucide-react"
 import { getCategoryIcon } from "@/lib/category-icons"
 import {
@@ -211,6 +213,36 @@ export function TransactionTable({
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <span className="font-medium">{transaction.description}</span>
+                    {/* Ownership Badge */}
+                    {transaction.type === "expense" && transaction.ownership && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              "h-5 gap-1 cursor-help",
+                              transaction.ownership === "household"
+                                ? "border-blue-500/50 text-blue-600 bg-blue-500/10"
+                                : "border-purple-500/50 text-purple-600 bg-purple-500/10"
+                            )}
+                          >
+                            {transaction.ownership === "household" ? (
+                              <Home className="h-3 w-3" />
+                            ) : (
+                              <User className="h-3 w-3" />
+                            )}
+                            <span className="text-[10px]">
+                              {transaction.ownership === "household" ? "Casa" : "Pessoal"}
+                            </span>
+                          </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {transaction.ownership === "household"
+                            ? "Despesa da casa (compartilhada)"
+                            : `Despesa pessoal de ${transaction.user?.name || "membro"}`}
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
                     {transaction.attachment && (
                       <Tooltip>
                         <TooltipTrigger asChild>

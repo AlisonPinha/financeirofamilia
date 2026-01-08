@@ -18,6 +18,9 @@ export type GoalHealthStatus = "on_track" | "attention" | "risk"
 
 export type AlertThreshold = 70 | 80 | 90
 
+// Ownership type for transactions
+export type OwnershipType = "household" | "personal"
+
 // Budget group for 50/30/20 rule
 export type BudgetGroup = "essentials" | "lifestyle" | "investments"
 
@@ -82,6 +85,7 @@ export interface Transaction {
   installments?: number | null
   currentInstallment?: number | null
   tags?: string[]
+  ownership?: OwnershipType  // "household" (Casa) ou "personal" (Pessoal)
   userId: string
   categoryId?: string | null
   accountId?: string | null

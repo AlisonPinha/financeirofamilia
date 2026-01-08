@@ -8,6 +8,8 @@ import {
   X,
   ChevronDown,
   SlidersHorizontal,
+  Home,
+  User as UserIcon,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
@@ -26,7 +28,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { cn } from "@/lib/utils"
-import type { Category, Account, User } from "@/types"
+import type { Category, Account, User, OwnershipType } from "@/types"
 
 export interface TransactionFilters {
   dateStart?: Date
@@ -35,6 +37,7 @@ export interface TransactionFilters {
   categories: string[]
   accountId?: string
   memberId?: string
+  ownership?: "all" | OwnershipType
   tags: string[]
 }
 
@@ -68,6 +71,7 @@ export function TransactionFiltersComponent({
     onFiltersChange({
       type: "all",
       categories: [],
+      ownership: "all",
       tags: [],
     })
   }
@@ -79,6 +83,7 @@ export function TransactionFiltersComponent({
     filters.categories.length > 0 ||
     filters.accountId ||
     filters.memberId ||
+    (filters.ownership && filters.ownership !== "all") ||
     filters.tags.length > 0
 
   const activeFilterCount = [
@@ -87,6 +92,7 @@ export function TransactionFiltersComponent({
     filters.categories.length > 0,
     filters.accountId,
     filters.memberId,
+    filters.ownership && filters.ownership !== "all",
     filters.tags.length > 0,
   ].filter(Boolean).length
 
@@ -310,6 +316,38 @@ export function TransactionFiltersComponent({
           </SelectContent>
         </Select>
 
+        {/* Ownership Filter */}
+        <Select
+          value={filters.ownership || "all"}
+          onValueChange={(value) =>
+            updateFilter("ownership", value === "all" ? "all" : value as OwnershipType)
+          }
+        >
+          <SelectTrigger
+            className={cn(
+              "w-[150px]",
+              filters.ownership && filters.ownership !== "all" && "border-primary"
+            )}
+          >
+            <SelectValue placeholder="Tipo Despesa" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="household">
+              <div className="flex items-center gap-2">
+                <Home className="h-4 w-4" />
+                <span>Casa</span>
+              </div>
+            </SelectItem>
+            <SelectItem value="personal">
+              <div className="flex items-center gap-2">
+                <UserIcon className="h-4 w-4" />
+                <span>Pessoal</span>
+              </div>
+            </SelectItem>
+          </SelectContent>
+        </Select>
+
         {/* Advanced Filters Toggle */}
         {tags.length > 0 && (
           <Button
@@ -412,6 +450,25 @@ export function TransactionFiltersComponent({
               <X
                 className="h-3 w-3 cursor-pointer hover:text-destructive"
                 onClick={() => updateFilter("memberId", undefined)}
+              />
+            </Badge>
+          )}
+          {filters.ownership && filters.ownership !== "all" && (
+            <Badge variant="secondary" className="gap-1">
+              {filters.ownership === "household" ? (
+                <>
+                  <Home className="h-3 w-3" />
+                  Casa
+                </>
+              ) : (
+                <>
+                  <UserIcon className="h-3 w-3" />
+                  Pessoal
+                </>
+              )}
+              <X
+                className="h-3 w-3 cursor-pointer hover:text-destructive"
+                onClick={() => updateFilter("ownership", "all")}
               />
             </Badge>
           )}

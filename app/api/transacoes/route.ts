@@ -10,6 +10,7 @@ export async function GET(request: NextRequest) {
     const categoryId = searchParams.get("categoryId")
     const accountId = searchParams.get("accountId")
     const tipo = searchParams.get("tipo")
+    const ownership = searchParams.get("ownership") // CASA ou PESSOAL
     const dataInicio = searchParams.get("dataInicio")
     const dataFim = searchParams.get("dataFim")
     const limit = searchParams.get("limit")
@@ -27,6 +28,7 @@ export async function GET(request: NextRequest) {
     if (categoryId) where.categoryId = categoryId
     if (accountId) where.accountId = accountId
     if (tipo) where.tipo = tipo
+    if (ownership) where.ownership = ownership
 
     if (dataInicio || dataFim) {
       where.data = {}
@@ -74,6 +76,7 @@ export async function POST(request: NextRequest) {
       userId,
       tags,
       notas,
+      ownership, // CASA ou PESSOAL
     } = body
 
     if (!descricao || !valor || !tipo || !data || !userId) {
@@ -106,6 +109,7 @@ export async function POST(request: NextRequest) {
           userId,
           tags: tags || [],
           notas,
+          ownership: ownership || "CASA",
         })
       }
 
@@ -132,6 +136,7 @@ export async function POST(request: NextRequest) {
         userId,
         tags: tags || [],
         notas,
+        ownership: ownership || "CASA",
       },
       include: {
         category: true,

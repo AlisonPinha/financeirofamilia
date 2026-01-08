@@ -2,7 +2,7 @@
 
 import { useEffect } from "react"
 import { Sidebar, Header, MobileNav, MobileSidebar } from "@/components/layout"
-import { QuickTransactionFab } from "@/components/quick-transaction"
+import { QuickTransactionModal } from "@/components/quick-transaction"
 import { SkipLinks } from "@/components/shared/skip-links"
 import { Breadcrumbs } from "@/components/shared/breadcrumbs"
 import { useStore } from "@/hooks/use-store"
@@ -12,7 +12,7 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  const { setSidebarOpen, setFamilyMembers, setUser, user } = useStore()
+  const { setSidebarOpen, setFamilyMembers, setUser, user, isAddTransactionOpen, setAddTransactionOpen } = useStore()
 
   // Initialize with sample users if not set
   useEffect(() => {
@@ -29,9 +29,9 @@ export default function DashboardLayout({
         },
         {
           id: "2",
-          name: "Esposa",
-          email: "esposa@familia.com",
-          avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Maria",
+          name: "Fernanda",
+          email: "fernanda@familia.com",
+          avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Fernanda",
           createdAt: now,
           updatedAt: now,
         },
@@ -68,8 +68,12 @@ export default function DashboardLayout({
       {/* Mobile bottom navigation */}
       <MobileNav />
 
-      {/* Quick Transaction FAB */}
-      <QuickTransactionFab />
+      {/* Quick Transaction Modal - triggered by center button in MobileNav */}
+      <QuickTransactionModal
+        open={isAddTransactionOpen}
+        onOpenChange={setAddTransactionOpen}
+        type="expense"
+      />
     </div>
   )
 }

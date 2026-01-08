@@ -18,6 +18,39 @@ interface MonthlyChartProps {
   data: MonthlyData[]
 }
 
+interface TooltipPayload {
+  name: string
+  value: number
+  dataKey: string
+  color: string
+}
+
+interface CustomTooltipProps {
+  active?: boolean
+  payload?: TooltipPayload[]
+  label?: string
+}
+
+function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
+  if (!active || !payload || !payload.length) return null
+
+  return (
+    <div className="bg-popover text-popover-foreground border border-border rounded-lg px-3 py-2 shadow-lg">
+      <p className="font-semibold text-sm mb-1">{label}</p>
+      {payload.map((entry, index) => (
+        <div key={index} className="flex items-center gap-2">
+          <div
+            className="w-3 h-3 rounded-sm"
+            style={{ backgroundColor: entry.color }}
+          />
+          <span className="text-sm">{entry.name}:</span>
+          <span className="font-bold">{formatCurrency(entry.value)}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export function MonthlyChart({ data }: MonthlyChartProps) {
   return (
     <Card className="col-span-1 lg:col-span-2">
@@ -39,14 +72,7 @@ export function MonthlyChart({ data }: MonthlyChartProps) {
                   }).format(value)
                 }
               />
-              <Tooltip
-                formatter={(value) => formatCurrency(Number(value))}
-                contentStyle={{
-                  backgroundColor: "hsl(var(--card))",
-                  border: "1px solid hsl(var(--border))",
-                  borderRadius: "var(--radius)",
-                }}
-              />
+              <Tooltip content={<CustomTooltip />} />
               <Legend />
               <Bar
                 dataKey="income"

@@ -22,6 +22,29 @@ interface ExpenseChartProps {
   data: ChartDataItem[]
 }
 
+interface TooltipPayload {
+  name: string
+  value: number
+  payload: ChartDataItem
+}
+
+interface CustomTooltipProps {
+  active?: boolean
+  payload?: TooltipPayload[]
+}
+
+function CustomTooltip({ active, payload }: CustomTooltipProps) {
+  if (!active || !payload || !payload.length) return null
+
+  const data = payload[0]
+  return (
+    <div className="bg-popover text-popover-foreground border border-border rounded-lg px-3 py-2 shadow-lg">
+      <p className="font-semibold text-sm">{data.name}</p>
+      <p className="text-base font-bold">{formatCurrency(data.value)}</p>
+    </div>
+  )
+}
+
 export function ExpenseChart({ data }: ExpenseChartProps) {
   return (
     <Card className="col-span-1">
@@ -45,14 +68,7 @@ export function ExpenseChart({ data }: ExpenseChartProps) {
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
               </Pie>
-              <Tooltip
-                formatter={(value) => formatCurrency(Number(value))}
-                contentStyle={{
-                  backgroundColor: "hsl(var(--card))",
-                  border: "1px solid hsl(var(--border))",
-                  borderRadius: "var(--radius)",
-                }}
-              />
+              <Tooltip content={<CustomTooltip />} />
               <Legend />
             </PieChart>
           </ResponsiveContainer>
