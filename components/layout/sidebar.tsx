@@ -13,6 +13,10 @@ import {
   User,
   ChevronDown,
   X,
+  LogOut,
+  ArrowDownCircle,
+  ArrowUpCircle,
+  Upload,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -27,6 +31,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Switch } from "@/components/ui/switch"
 import { useStore } from "@/hooks/use-store"
+import { getSupabaseBrowserClient } from "@/lib/supabase"
+import { useRouter } from "next/navigation"
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -43,14 +49,23 @@ interface SidebarProps {
 
 export function Sidebar({ className, onClose }: SidebarProps) {
   const pathname = usePathname()
+  const router = useRouter()
   const {
     user,
     familyMembers,
     viewMode,
     setUser,
     setViewMode,
-    setAddTransactionOpen,
+    openAddTransaction,
+    setImportDocumentOpen,
   } = useStore()
+
+  const handleSignOut = async () => {
+    const supabase = getSupabaseBrowserClient()
+    await supabase.auth.signOut()
+    router.push("/login")
+    router.refresh()
+  }
 
   const allMembers = user
     ? [user, ...familyMembers.filter((m) => m.id !== user.id)]
@@ -140,16 +155,61 @@ export function Sidebar({ className, onClose }: SidebarProps) {
         </DropdownMenu>
       </div>
 
-      {/* Quick Action */}
-      <div className="p-4">
-        <Button
-          onClick={() => setAddTransactionOpen(true)}
-          className="w-full justify-start gap-2"
-          size="lg"
-        >
-          <Plus className="h-5 w-5" />
-          Nova Transação
-        </Button>
+      {/* Quick Actions */}
+      <div className="p-4 space-y-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              className="w-full justify-between gap-2"
+              size="lg"
+            >
+              <span className="flex items-center gap-2">
+                <Plus className="h-5 w-5" />
+                Nova Transação
+              </span>
+              <ChevronDown className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-56" align="start">
+            <DropdownMenuItem
+              onClick={() => openAddTransaction("expense")}
+              className="gap-3 py-2.5"
+            >
+              <div className="h-8 w-8 rounded-full bg-rose-500 flex items-center justify-center">
+                <ArrowDownCircle className="h-4 w-4 text-white" />
+              </div>
+              <span className="font-medium">Despesa</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => openAddTransaction("income")}
+              className="gap-3 py-2.5"
+            >
+              <div className="h-8 w-8 rounded-full bg-emerald-500 flex items-center justify-center">
+                <ArrowUpCircle className="h-4 w-4 text-white" />
+              </div>
+              <span className="font-medium">Receita</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => openAddTransaction("transfer")}
+              className="gap-3 py-2.5"
+            >
+              <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center">
+                <ArrowLeftRight className="h-4 w-4 text-white" />
+              </div>
+              <span className="font-medium">Transferência</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={() => setImportDocumentOpen(true)}
+              className="gap-3 py-2.5"
+            >
+              <div className="h-8 w-8 rounded-full bg-amber-500 flex items-center justify-center">
+                <Upload className="h-4 w-4 text-white" />
+              </div>
+              <span className="font-medium">Importar Documento</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Navigation */}
@@ -212,8 +272,17 @@ export function Sidebar({ className, onClose }: SidebarProps) {
         </p>
       </div>
 
-      {/* Version */}
-      <div className="px-4 py-3 border-t border-card-border">
+      {/* Logout & Version */}
+      <div className="px-4 py-3 border-t border-card-border space-y-3">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleSignOut}
+          className="w-full justify-start gap-2 text-secondary hover:text-danger hover:bg-danger/10"
+        >
+          <LogOut className="h-4 w-4" />
+          Sair
+        </Button>
         <div className="flex items-center justify-between text-caption text-secondary">
           <span>v1.0.0</span>
           <button className="hover:text-foreground transition-colors">

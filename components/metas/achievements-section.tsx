@@ -57,9 +57,9 @@ function AchievementBadge({
   achievement: Achievement
   size?: "sm" | "md" | "lg"
 }) {
-  const Icon = iconMap[achievement.icon] || Trophy
+  const Icon = iconMap[achievement.icon] ?? Trophy
   const isUnlocked = !!achievement.unlockedAt
-  const colors = categoryColors[achievement.category] || categoryColors.milestone
+  const colors = categoryColors[achievement.category] ?? categoryColors.milestone ?? { bgColor: "bg-amber-500/20", color: "text-amber-500" }
 
   const sizeClasses = {
     sm: "h-12 w-12",

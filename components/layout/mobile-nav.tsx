@@ -12,6 +12,7 @@ import {
   X,
   ArrowDownCircle,
   ArrowUpCircle,
+  Upload,
   type LucideIcon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -51,11 +52,17 @@ const addOptions = [
     icon: ArrowLeftRight,
     color: "bg-blue-500",
   },
+  {
+    type: "import" as const,
+    label: "Importar",
+    icon: Upload,
+    color: "bg-amber-500",
+  },
 ]
 
 export function MobileNav() {
   const pathname = usePathname()
-  const { openAddTransaction } = useStore()
+  const { openAddTransaction, setImportDocumentOpen } = useStore()
   const navRef = React.useRef<HTMLDivElement>(null)
   const [indicatorStyle, setIndicatorStyle] = React.useState({ left: 0, width: 0 })
   const [isMenuOpen, setIsMenuOpen] = React.useState(false)
@@ -81,9 +88,13 @@ export function MobileNav() {
     }
   }, [pathname])
 
-  const handleOptionClick = (type: "expense" | "income" | "transfer") => {
+  const handleOptionClick = (type: "expense" | "income" | "transfer" | "import") => {
     setIsMenuOpen(false)
-    openAddTransaction(type)
+    if (type === "import") {
+      setImportDocumentOpen(true)
+    } else {
+      openAddTransaction(type)
+    }
   }
 
   return (

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { Plus, Wallet, Building2, CreditCard, PiggyBank, TrendingUp, MoreHorizontal, Pencil, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,8 +10,20 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { formatCurrency } from "@/lib/utils"
-import { mockConfigAccounts, type ConfigAccount } from "@/lib/mock-data"
+import { useStore } from "@/hooks/use-store"
+import { useToast } from "@/hooks/use-toast"
+import Link from "next/link"
 
 const accountTypeConfig = {
   checking: { label: "Conta Corrente", icon: Wallet, color: "text-blue-500" },
@@ -21,26 +33,53 @@ const accountTypeConfig = {
 }
 
 export default function ContasPage() {
-  const [accounts, setAccounts] = useState<ConfigAccount[]>(mockConfigAccounts)
+  const { accounts, deleteAccount } = useStore()
+  const { toast } = useToast()
+  const [deleteId, setDeleteId] = useState<string | null>(null)
 
-  const totalBalance = accounts.reduce((sum, acc) => {
-    // Credit cards show negative balance (debt)
-    if (acc.type === "credit") {
-      return sum - acc.balance
+  const accountToDelete = accounts.find(a => a.id === deleteId)
+
+  const totalBalance = useMemo(() => {
+    return accounts.reduce((sum, acc) => {
+      if (acc.type === "credit") {
+        return sum - acc.balance
+      }
+      return sum + acc.balance
+    }, 0)
+  }, [accounts])
+
+  const totalAssets = useMemo(() => {
+    return accounts
+      .filter((acc) => acc.type !== "credit")
+      .reduce((sum, acc) => sum + acc.balance, 0)
+  }, [accounts])
+
+  const totalDebts = useMemo(() => {
+    return accounts
+      .filter((acc) => acc.type === "credit")
+      .reduce((sum, acc) => sum + acc.balance, 0)
+  }, [accounts])
+
+  const handleConfirmDelete = async () => {
+    if (!deleteId) return
+
+    const account = accounts.find(a => a.id === deleteId)
+    try {
+      await fetch(`/api/contas?id=${deleteId}`, { method: "DELETE" })
+      deleteAccount(deleteId)
+      toast({
+        title: "Conta excluída",
+        description: `${account?.name} foi removida com sucesso.`,
+      })
+    } catch {
+      toast({
+        title: "Erro",
+        description: "Não foi possível excluir a conta.",
+        variant: "destructive",
+      })
+    } finally {
+      setDeleteId(null)
     }
-    return sum + acc.balance
-  }, 0)
-
-  const totalAssets = accounts
-    .filter((acc) => acc.type !== "credit")
-    .reduce((sum, acc) => sum + acc.balance, 0)
-
-  const totalDebts = accounts
-    .filter((acc) => acc.type === "credit")
-    .reduce((sum, acc) => sum + acc.balance, 0)
-
-  const handleDeleteAccount = (id: string) => {
-    setAccounts((prev) => prev.filter((acc) => acc.id !== id))
   }
 
   return (
@@ -53,10 +92,12 @@ export default function ContasPage() {
             Gerencie suas contas bancárias e cartões
           </p>
         </div>
-        <Button size="lg" className="gap-2">
-          <Plus className="h-5 w-5" />
-          Nova Conta
-        </Button>
+        <Link href="/configuracoes?tab=accounts">
+          <Button size="lg" className="gap-2">
+            <Plus className="h-5 w-5" />
+            Nova Conta
+          </Button>
+        </Link>
       </div>
 
       {/* Summary Cards */}
@@ -134,9 +175,9 @@ export default function ContasPage() {
                         <div className="flex items-center gap-3">
                           <div
                             className="flex h-10 w-10 items-center justify-center rounded-xl"
-                            style={{ backgroundColor: `${account.color}20` }}
+                            style={{ backgroundColor: `${account.color || "#6366f1"}20` }}
                           >
-                            <Icon className="h-5 w-5" style={{ color: account.color }} />
+                            <Icon className="h-5 w-5" style={{ color: account.color || "#6366f1" }} />
                           </div>
                           <div>
                             <p className="font-medium">{account.name}</p>
@@ -155,13 +196,15 @@ export default function ContasPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem className="gap-2">
-                              <Pencil className="h-4 w-4" />
-                              Editar
-                            </DropdownMenuItem>
+                            <Link href="/configuracoes?tab=accounts">
+                              <DropdownMenuItem className="gap-2">
+                                <Pencil className="h-4 w-4" />
+                                Editar
+                              </DropdownMenuItem>
+                            </Link>
                             <DropdownMenuItem
                               className="gap-2 text-destructive"
-                              onClick={() => handleDeleteAccount(account.id)}
+                              onClick={() => setDeleteId(account.id)}
                             >
                               <Trash2 className="h-4 w-4" />
                               Excluir
@@ -192,12 +235,37 @@ export default function ContasPage() {
           <p className="text-sm text-secondary mt-1 mb-4">
             Adicione suas contas bancárias e cartões
           </p>
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Adicionar Conta
-          </Button>
+          <Link href="/configuracoes?tab=accounts">
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Adicionar Conta
+            </Button>
+          </Link>
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir conta</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir a conta &quot;{accountToDelete?.name}&quot;?
+              Esta ação não pode ser desfeita e todas as transações associadas
+              serão mantidas sem conta vinculada.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

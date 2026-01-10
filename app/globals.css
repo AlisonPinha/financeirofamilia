@@ -792,3 +792,84 @@
     @apply mx-4 my-3;
   }
 }
+
+/* ================================
+   ACCESSIBILITY IMPROVEMENTS
+   ================================ */
+
+/* Focus Visible - Enhanced focus styles for keyboard navigation */
+@layer utilities {
+  .focus-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+  }
+}
+
+/* Skip to main content link */
+.skip-to-main {
+  @apply sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:rounded-md focus:bg-primary focus:text-primary-foreground focus:outline-none;
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --card-border: rgba(0, 0, 0, 0.2);
+    --foreground-secondary: #4d4d4d;
+    --foreground-tertiary: #666666;
+  }
+
+  .dark {
+    --card-border: rgba(255, 255, 255, 0.3);
+    --foreground-secondary: #b3b3b3;
+    --foreground-tertiary: #999999;
+  }
+}
+
+/* Better focus for interactive elements */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Ensure adequate touch target size (48x48 minimum) */
+@layer utilities {
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .touch-target-lg {
+    min-height: 48px;
+    min-width: 48px;
+  }
+}
+
+/* Screen reader only - improved */
+.sr-only-focusable:not(:focus):not(:focus-within) {
+  @apply sr-only;
+}
+
+/* Ensure text is readable when forced colors mode is active */
+@media (forced-colors: active) {
+  .card,
+  .btn,
+  .input {
+    border: 1px solid currentColor;
+  }
+}

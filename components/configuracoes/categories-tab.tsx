@@ -195,11 +195,12 @@ export function CategoriesTab({ categories, onCategoriesChange }: CategoriesTabP
   const handleMoveUp = (category: CategoryWithGroup) => {
     const sameTypeCategories = categories.filter((c) => c.type === category.type).sort((a, b) => a.order - b.order)
     const index = sameTypeCategories.findIndex((c) => c.id === category.id)
-    if (index <= 0) return
+    const prevCategory = sameTypeCategories[index - 1]
+    if (index <= 0 || !prevCategory) return
 
     const updated = categories.map((c) => {
-      if (c.id === category.id) return { ...c, order: sameTypeCategories[index - 1].order }
-      if (c.id === sameTypeCategories[index - 1].id) return { ...c, order: category.order }
+      if (c.id === category.id) return { ...c, order: prevCategory.order }
+      if (c.id === prevCategory.id) return { ...c, order: category.order }
       return c
     })
     onCategoriesChange(updated)
@@ -208,11 +209,12 @@ export function CategoriesTab({ categories, onCategoriesChange }: CategoriesTabP
   const handleMoveDown = (category: CategoryWithGroup) => {
     const sameTypeCategories = categories.filter((c) => c.type === category.type).sort((a, b) => a.order - b.order)
     const index = sameTypeCategories.findIndex((c) => c.id === category.id)
-    if (index >= sameTypeCategories.length - 1) return
+    const nextCategory = sameTypeCategories[index + 1]
+    if (index >= sameTypeCategories.length - 1 || !nextCategory) return
 
     const updated = categories.map((c) => {
-      if (c.id === category.id) return { ...c, order: sameTypeCategories[index + 1].order }
-      if (c.id === sameTypeCategories[index + 1].id) return { ...c, order: category.order }
+      if (c.id === category.id) return { ...c, order: nextCategory.order }
+      if (c.id === nextCategory.id) return { ...c, order: category.order }
       return c
     })
     onCategoriesChange(updated)

@@ -64,7 +64,9 @@ export function SwipeableItem({
   const handleTouchStart = useCallback(
     (e: React.TouchEvent) => {
       if (disabled) return
-      startX.current = e.touches[0].clientX
+      const touch = e.touches[0]
+      if (!touch) return
+      startX.current = touch.clientX
       currentX.current = translateX
       setIsDragging(true)
     },
@@ -74,7 +76,9 @@ export function SwipeableItem({
   const handleTouchMove = useCallback(
     (e: React.TouchEvent) => {
       if (!isDragging || disabled) return
-      const diff = e.touches[0].clientX - startX.current
+      const touch = e.touches[0]
+      if (!touch) return
+      const diff = touch.clientX - startX.current
       const newTranslateX = Math.min(0, Math.max(currentX.current + diff, -200))
       setTranslateX(newTranslateX)
     },

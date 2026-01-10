@@ -51,11 +51,12 @@ const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
 
       // Split by comma (decimal separator in pt-BR)
       const parts = cleaned.split(",")
-      let formatted = parts[0]
+      let formatted = parts[0] ?? ""
 
       // Add decimal part if exists (max 2 digits)
-      if (parts.length > 1) {
-        formatted += "," + parts[1].slice(0, 2)
+      const decimalPart = parts[1]
+      if (parts.length > 1 && decimalPart) {
+        formatted += "," + decimalPart.slice(0, 2)
       }
 
       setDisplayValue(formatted)

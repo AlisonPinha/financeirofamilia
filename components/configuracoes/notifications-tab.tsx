@@ -129,7 +129,7 @@ export function NotificationsTab({ settings, onSettingsChange }: NotificationsTa
                 </div>
                 <Slider
                   value={[localSettings.categoryLimitThreshold]}
-                  onValueChange={(value) => updateSetting("categoryLimitThreshold", value[0])}
+                  onValueChange={(value) => updateSetting("categoryLimitThreshold", value[0] ?? 80)}
                   min={50}
                   max={100}
                   step={5}
@@ -182,7 +182,7 @@ export function NotificationsTab({ settings, onSettingsChange }: NotificationsTa
                 </div>
                 <Slider
                   value={[localSettings.budgetAlertThreshold]}
-                  onValueChange={(value) => updateSetting("budgetAlertThreshold", value[0])}
+                  onValueChange={(value) => updateSetting("budgetAlertThreshold", value[0] ?? 80)}
                   min={50}
                   max={100}
                   step={5}

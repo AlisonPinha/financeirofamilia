@@ -33,10 +33,12 @@ export function PullToRefresh({
   const handleTouchStart = useCallback(
     (e: TouchEvent) => {
       if (!canPull) return
+      const touch = e.touches[0]
+      if (!touch) return
 
       const container = containerRef.current
       if (container && container.scrollTop === 0) {
-        startY.current = e.touches[0].clientY
+        startY.current = touch.clientY
         isAtTop.current = true
         setIsPulling(true)
       } else {
@@ -49,8 +51,10 @@ export function PullToRefresh({
   const handleTouchMove = useCallback(
     (e: TouchEvent) => {
       if (!isPulling || isRefreshing) return
+      const touch = e.touches[0]
+      if (!touch) return
 
-      const currentY = e.touches[0].clientY
+      const currentY = touch.clientY
       const diff = currentY - startY.current
 
       if (diff > 0 && isAtTop.current) {

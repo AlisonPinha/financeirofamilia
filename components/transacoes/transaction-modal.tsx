@@ -191,12 +191,30 @@ export function TransactionModal({
 
     if (formData.amount <= 0) {
       newErrors.amount = "Valor deve ser maior que zero"
+    } else if (formData.amount > 999999999) {
+      newErrors.amount = "Valor muito alto"
     }
+
     if (!formData.description.trim()) {
       newErrors.description = "Descrição é obrigatória"
+    } else if (formData.description.trim().length < 2) {
+      newErrors.description = "Descrição deve ter pelo menos 2 caracteres"
+    } else if (formData.description.length > 200) {
+      newErrors.description = "Descrição deve ter no máximo 200 caracteres"
     }
+
     if (!formData.date) {
       newErrors.date = "Data é obrigatória"
+    }
+
+    // Validar parcelas
+    if (formData.isInstallment && formData.installmentCount < 2) {
+      newErrors.installmentCount = "Número de parcelas deve ser pelo menos 2"
+    }
+
+    // Validar recorrência
+    if (formData.isRecurring && formData.recurrenceEndDate && formData.recurrenceEndDate < formData.date) {
+      newErrors.recurrenceEndDate = "Data fim deve ser após a data inicial"
     }
 
     setErrors(newErrors)
@@ -351,9 +369,11 @@ export function TransactionModal({
                 errors.amount && "border-destructive focus-visible:ring-destructive"
               )}
               placeholder="0,00"
+              aria-invalid={!!errors.amount}
+              aria-describedby={errors.amount ? "amount-error" : undefined}
             />
             {errors.amount && (
-              <p className="text-xs text-destructive">{errors.amount}</p>
+              <p id="amount-error" className="text-xs text-destructive" role="alert">{errors.amount}</p>
             )}
           </div>
 
@@ -368,9 +388,12 @@ export function TransactionModal({
               className={cn(
                 errors.description && "border-destructive focus-visible:ring-destructive"
               )}
+              maxLength={200}
+              aria-invalid={!!errors.description}
+              aria-describedby={errors.description ? "description-error" : undefined}
             />
             {errors.description && (
-              <p className="text-xs text-destructive">{errors.description}</p>
+              <p id="description-error" className="text-xs text-destructive" role="alert">{errors.description}</p>
             )}
           </div>
 
@@ -720,6 +743,9 @@ export function TransactionModal({
               {/* Attachment */}
               <div className="space-y-2">
                 <Label htmlFor="attachment-input">Anexo</Label>
+                <p id="attachment-help" className="text-xs text-muted-foreground">
+                  Formatos aceitos: JPG, PNG, GIF, PDF (máx. 5MB)
+                </p>
                 <input
                   id="attachment-input"
                   ref={fileInputRef}
@@ -727,7 +753,7 @@ export function TransactionModal({
                   accept="image/*,.pdf"
                   onChange={handleFileChange}
                   className="hidden"
-                  aria-describedby="attachment-help"
+                  aria-describedby="attachment-help attachment-error"
                 />
                 {!formData.attachment ? (
                   <Button
@@ -767,7 +793,7 @@ export function TransactionModal({
                   </div>
                 )}
                 {errors.attachment && (
-                  <p className="text-xs text-destructive">{errors.attachment}</p>
+                  <p id="attachment-error" className="text-xs text-destructive" role="alert">{errors.attachment}</p>
                 )}
               </div>
             </CollapsibleContent>

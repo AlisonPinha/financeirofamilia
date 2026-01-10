@@ -32,6 +32,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -89,6 +99,9 @@ export function InvestmentsTable({
   const [filterInstitution, setFilterInstitution] = useState<string>("all")
   const [searchTerm, setSearchTerm] = useState("")
   const [showFilters, setShowFilters] = useState(false)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
+
+  const investmentToDelete = investments.find(i => i.id === deleteId)
 
   // Get unique institutions
   const institutions = useMemo(() => {
@@ -462,7 +475,7 @@ export function InvestmentsTable({
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               className="text-destructive"
-                              onClick={() => onDelete?.(investment.id)}
+                              onClick={() => setDeleteId(investment.id)}
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
                               Excluir
@@ -477,6 +490,33 @@ export function InvestmentsTable({
             </tbody>
           </table>
         </div>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Excluir investimento</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja excluir o investimento &quot;{investmentToDelete?.name}&quot;?
+                Esta ação não pode ser desfeita.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  if (deleteId) {
+                    onDelete?.(deleteId)
+                    setDeleteId(null)
+                  }
+                }}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Excluir
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* Summary */}
         {processedInvestments.length > 0 && (

@@ -45,8 +45,30 @@ export interface User {
   name: string
   email: string
   avatar?: string | null
+  isOnboarded?: boolean
+  monthlyIncome?: number | null
   createdAt: Date
   updatedAt: Date
+}
+
+// Dados do onboarding (para API)
+export interface OnboardingData {
+  // Step 1: Profile
+  nome: string
+  email: string
+  avatar?: string
+
+  // Step 2: Accounts
+  accounts: {
+    nome: string
+    tipo: DbAccountType
+    banco: string
+    saldoInicial: number
+    cor: string
+  }[]
+
+  // Step 3: Income
+  rendaMensal: number
 }
 
 export interface Account {
@@ -56,6 +78,7 @@ export interface Account {
   balance: number
   color?: string | null
   icon?: string | null
+  bank?: string | null
   userId: string
   createdAt: Date
   updatedAt: Date

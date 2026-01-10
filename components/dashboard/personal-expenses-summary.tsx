@@ -1,6 +1,6 @@
 "use client"
 
-import { Home, User } from "lucide-react"
+import { Home } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Progress } from "@/components/ui/progress"

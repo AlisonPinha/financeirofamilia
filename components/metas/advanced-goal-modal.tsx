@@ -660,7 +660,7 @@ export function AdvancedGoalModal({
                       <Slider
                         value={[formState.essentialsPercent]}
                         onValueChange={([value]) =>
-                          handlePercentageChange("essentialsPercent", value)
+                          handlePercentageChange("essentialsPercent", value ?? 0)
                         }
                         max={100}
                         step={1}
@@ -682,7 +682,7 @@ export function AdvancedGoalModal({
                       <Slider
                         value={[formState.investmentsPercent]}
                         onValueChange={([value]) =>
-                          handlePercentageChange("investmentsPercent", value)
+                          handlePercentageChange("investmentsPercent", value ?? 0)
                         }
                         max={100}
                         step={1}
@@ -704,7 +704,7 @@ export function AdvancedGoalModal({
                       <Slider
                         value={[formState.lifestylePercent]}
                         onValueChange={([value]) =>
-                          handlePercentageChange("lifestylePercent", value)
+                          handlePercentageChange("lifestylePercent", value ?? 0)
                         }
                         max={100}
                         step={1}

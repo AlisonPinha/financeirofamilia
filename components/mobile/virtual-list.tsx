@@ -132,14 +132,17 @@ export function VirtualList<T>({
           position: "relative",
         }}
       >
-        {visibleItems.map(({ item, index, style }) => (
-          <div
-            key={keyExtractor ? keyExtractor(item, index) : index}
-            style={style}
-          >
-            {renderItem(item, index)}
-          </div>
-        ))}
+        {visibleItems.map(({ item, index, style }) => {
+          if (!item) return null
+          return (
+            <div
+              key={keyExtractor ? keyExtractor(item, index) : index}
+              style={style}
+            >
+              {renderItem(item, index)}
+            </div>
+          )
+        })}
       </div>
 
       {footerComponent}

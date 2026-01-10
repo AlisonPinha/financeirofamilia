@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import {
   MoreHorizontal,
   Pencil,
@@ -26,6 +27,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import {
   Tooltip,
   TooltipContent,
@@ -170,6 +181,8 @@ export function GoalCardEnhanced({
   onDelete,
   onStatusChange,
 }: GoalCardEnhancedProps) {
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+
   const progress = (goal.currentAmount / goal.targetAmount) * 100
   const typeConfig = goalTypeConfig[goal.type || "savings"]
   const TypeIcon = typeConfig.icon
@@ -326,7 +339,7 @@ export function GoalCardEnhanced({
                 )}
                 <DropdownMenuItem
                   className="text-destructive"
-                  onClick={() => onDelete?.(goal.id)}
+                  onClick={() => setShowDeleteDialog(true)}
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
                   Excluir
@@ -335,6 +348,28 @@ export function GoalCardEnhanced({
             </DropdownMenu>
           </div>
         </div>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Excluir meta</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja excluir a meta &quot;{goal.name}&quot;?
+                Esta ação não pode ser desfeita.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => onDelete?.(goal.id)}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Excluir
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* Values */}
         <div className="mt-4 pt-4 border-t">

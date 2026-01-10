@@ -18,196 +18,21 @@ import {
   AdvancedGoalModal,
 } from "@/components/metas"
 import { useToast } from "@/hooks/use-toast"
+import { useStore } from "@/hooks/use-store"
 import { generateId } from "@/lib/utils"
-import type { Goal, GoalType, GoalStatus, Achievement, AdvancedGoal, Category } from "@/types"
-
-// Mock goals data
-const mockGoals: Goal[] = [
-  {
-    id: "1",
-    name: "Reserva de Emergência",
-    description: "6 meses de despesas guardados",
-    type: "savings",
-    targetAmount: 30000,
-    currentAmount: 18500,
-    deadline: new Date("2026-06-01"),
-    color: "#22c55e",
-    status: "active",
-    streak: 5,
-    userId: "1",
-    createdAt: new Date("2025-06-01"),
-    updatedAt: new Date(),
-  },
-  {
-    id: "2",
-    name: "Viagem Europa",
-    description: "Lua de mel em Portugal e Espanha",
-    type: "savings",
-    targetAmount: 25000,
-    currentAmount: 8200,
-    deadline: new Date("2026-12-01"),
-    color: "#3b82f6",
-    status: "active",
-    streak: 3,
-    userId: "1",
-    createdAt: new Date("2025-09-01"),
-    updatedAt: new Date(),
-  },
-  {
-    id: "3",
-    name: "Carteira de Investimentos",
-    description: "Atingir R$ 100k em investimentos",
-    type: "investment",
-    targetAmount: 100000,
-    currentAmount: 45000,
-    deadline: new Date("2027-01-01"),
-    color: "#8b5cf6",
-    status: "active",
-    streak: 8,
-    userId: "1",
-    createdAt: new Date("2025-01-01"),
-    updatedAt: new Date(),
-  },
-  {
-    id: "4",
-    name: "Entrada do Apartamento",
-    description: "20% do valor do imóvel",
-    type: "patrimony",
-    targetAmount: 80000,
-    currentAmount: 32000,
-    deadline: new Date("2028-01-01"),
-    color: "#d946ef",
-    status: "active",
-    userId: "1",
-    createdAt: new Date("2025-03-01"),
-    updatedAt: new Date(),
-  },
-  {
-    id: "5",
-    name: "Curso de Inglês",
-    description: "Intercâmbio de 3 meses",
-    type: "savings",
-    targetAmount: 15000,
-    currentAmount: 15000,
-    deadline: new Date("2025-12-01"),
-    status: "completed",
-    userId: "1",
-    createdAt: new Date("2024-06-01"),
-    updatedAt: new Date(),
-  },
-  {
-    id: "6",
-    name: "Fundo de Férias",
-    description: "Viagem anual da família",
-    type: "savings",
-    targetAmount: 8000,
-    currentAmount: 2500,
-    status: "paused",
-    userId: "1",
-    createdAt: new Date("2025-08-01"),
-    updatedAt: new Date(),
-  },
-]
-
-// Mock budget data for 50/30/20 rule
-const mockBudgetData = {
-  totalIncome: 14000,
-  essentialsSpent: 7700, // 55%
-  lifestyleSpent: 3500, // 25%
-  investmentsSpent: 2800, // 20%
-}
-
-// Mock categories for advanced goal modal
-const mockCategories: Category[] = [
-  { id: "1", name: "Alimentação", type: "expense", color: "#f97316", userId: "1", createdAt: new Date(), updatedAt: new Date() },
-  { id: "2", name: "Moradia", type: "expense", color: "#ef4444", userId: "1", createdAt: new Date(), updatedAt: new Date() },
-  { id: "3", name: "Transporte", type: "expense", color: "#eab308", userId: "1", createdAt: new Date(), updatedAt: new Date() },
-  { id: "4", name: "Lazer", type: "expense", color: "#a855f7", userId: "1", createdAt: new Date(), updatedAt: new Date() },
-  { id: "5", name: "Saúde", type: "expense", color: "#ec4899", userId: "1", createdAt: new Date(), updatedAt: new Date() },
-  { id: "6", name: "Educação", type: "expense", color: "#06b6d4", userId: "1", createdAt: new Date(), updatedAt: new Date() },
-  { id: "7", name: "Compras", type: "expense", color: "#f43f5e", userId: "1", createdAt: new Date(), updatedAt: new Date() },
-  { id: "8", name: "Assinaturas", type: "expense", color: "#64748b", userId: "1", createdAt: new Date(), updatedAt: new Date() },
-]
-
-// Mock achievements
-const mockAchievements: Achievement[] = [
-  {
-    id: "1",
-    title: "Primeiro Passo",
-    description: "Criou sua primeira meta financeira",
-    icon: "target",
-    category: "milestone",
-    unlockedAt: new Date("2025-06-01"),
-  },
-  {
-    id: "2",
-    title: "Economista",
-    description: "Economizou R$ 10.000 no total",
-    icon: "piggy",
-    category: "savings",
-    unlockedAt: new Date("2025-09-15"),
-  },
-  {
-    id: "3",
-    title: "Focado",
-    description: "3 meses consecutivos batendo a meta de economia",
-    icon: "flame",
-    category: "streak",
-    unlockedAt: new Date("2025-10-01"),
-  },
-  {
-    id: "4",
-    title: "Investidor Iniciante",
-    description: "Primeiro investimento registrado",
-    icon: "medal",
-    category: "milestone",
-    unlockedAt: new Date("2025-07-20"),
-  },
-  {
-    id: "5",
-    title: "Sem Delivery",
-    description: "3 meses sem estourar o orçamento de delivery",
-    icon: "trophy",
-    category: "budget",
-    unlockedAt: new Date("2026-01-05"),
-  },
-  {
-    id: "6",
-    title: "Meta Batida!",
-    description: "Completou uma meta financeira",
-    icon: "star",
-    category: "milestone",
-    unlockedAt: new Date("2025-12-01"),
-  },
-  {
-    id: "7",
-    title: "Super Economizador",
-    description: "Economizou R$ 50.000 no total",
-    icon: "crown",
-    category: "savings",
-    unlockedAt: null,
-  },
-  {
-    id: "8",
-    title: "Maratonista",
-    description: "12 meses consecutivos batendo metas",
-    icon: "zap",
-    category: "streak",
-    unlockedAt: null,
-  },
-  {
-    id: "9",
-    title: "Regra de Ouro",
-    description: "Seguiu a regra 50/30/20 por 6 meses",
-    icon: "award",
-    category: "budget",
-    unlockedAt: null,
-  },
-]
+import type { Goal, GoalType, GoalStatus, Achievement, AdvancedGoal } from "@/types"
 
 export default function MetasPage() {
   const { toast } = useToast()
-  const [goals, setGoals] = useState<Goal[]>(mockGoals)
+  const {
+    goals: storeGoals,
+    categories,
+    transactions,
+    addGoal,
+    updateGoal,
+    deleteGoal: deleteGoalStore,
+  } = useStore()
+
   const [activeTab, setActiveTab] = useState("all")
 
   // Modal state
@@ -217,8 +42,166 @@ export default function MetasPage() {
 
   // Advanced Modal state
   const [isAdvancedModalOpen, setIsAdvancedModalOpen] = useState(false)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [advancedGoals, setAdvancedGoals] = useState<AdvancedGoal[]>([])
+  const [_advancedGoals, _setAdvancedGoals] = useState<AdvancedGoal[]>([])
+
+  // Convert store goals to component format
+  const goals: Goal[] = useMemo(() => {
+    return storeGoals.map(goal => ({
+      id: goal.id,
+      name: goal.name,
+      description: goal.description,
+      type: goal.type,
+      targetAmount: goal.targetAmount,
+      currentAmount: goal.currentAmount,
+      deadline: goal.deadline,
+      color: goal.color,
+      icon: goal.icon,
+      status: goal.status,
+      streak: goal.streak,
+      userId: goal.userId,
+      createdAt: goal.createdAt,
+      updatedAt: goal.updatedAt,
+    }))
+  }, [storeGoals])
+
+  // Calculate budget data from transactions (50/30/20 rule)
+  const budgetData = useMemo(() => {
+    const currentMonth = new Date().getMonth()
+    const currentYear = new Date().getFullYear()
+
+    const monthTransactions = transactions.filter(t => {
+      const date = new Date(t.date)
+      return date.getMonth() === currentMonth && date.getFullYear() === currentYear
+    })
+
+    const totalIncome = monthTransactions
+      .filter(t => t.type === "income")
+      .reduce((sum, t) => sum + t.amount, 0)
+
+    // Categorize expenses based on category group
+    let essentialsSpent = 0
+    let lifestyleSpent = 0
+    let investmentsSpent = 0
+
+    monthTransactions
+      .filter(t => t.type === "expense")
+      .forEach(t => {
+        const category = categories.find(c => c.id === t.categoryId)
+        if (category) {
+          // Simple heuristic based on category name
+          const catName = category.name.toLowerCase()
+          if (['moradia', 'alimentação', 'transporte', 'saúde', 'educação'].some(e => catName.includes(e))) {
+            essentialsSpent += t.amount
+          } else {
+            lifestyleSpent += t.amount
+          }
+        } else {
+          lifestyleSpent += t.amount
+        }
+      })
+
+    // Count investments from investment transactions
+    investmentsSpent = monthTransactions
+      .filter(t => t.type === "expense")
+      .filter(t => {
+        const category = categories.find(c => c.id === t.categoryId)
+        return category?.name.toLowerCase().includes('investimento')
+      })
+      .reduce((sum, t) => sum + t.amount, 0)
+
+    return {
+      totalIncome: totalIncome || 0,
+      essentialsSpent,
+      lifestyleSpent,
+      investmentsSpent,
+    }
+  }, [transactions, categories])
+
+  // Generate achievements based on actual data
+  const achievements: Achievement[] = useMemo(() => {
+    const result: Achievement[] = []
+
+    // First Step - created first goal
+    if (goals.length > 0) {
+      result.push({
+        id: "1",
+        title: "Primeiro Passo",
+        description: "Criou sua primeira meta financeira",
+        icon: "target",
+        category: "milestone",
+        unlockedAt: goals[goals.length - 1]?.createdAt || new Date(),
+      })
+    }
+
+    // Completed goals
+    const completedGoalsCount = goals.filter(g => g.status === "completed").length
+    if (completedGoalsCount > 0) {
+      result.push({
+        id: "6",
+        title: "Meta Batida!",
+        description: "Completou uma meta financeira",
+        icon: "star",
+        category: "milestone",
+        unlockedAt: new Date(),
+      })
+    }
+
+    // Calculate total saved
+    const totalSaved = goals.reduce((sum, g) => sum + g.currentAmount, 0)
+    if (totalSaved >= 10000) {
+      result.push({
+        id: "2",
+        title: "Economista",
+        description: "Economizou R$ 10.000 no total",
+        icon: "piggy",
+        category: "savings",
+        unlockedAt: new Date(),
+      })
+    }
+
+    if (totalSaved >= 50000) {
+      result.push({
+        id: "7",
+        title: "Super Economizador",
+        description: "Economizou R$ 50.000 no total",
+        icon: "crown",
+        category: "savings",
+        unlockedAt: new Date(),
+      })
+    }
+
+    // Locked achievements (not yet unlocked)
+    if (totalSaved < 50000) {
+      result.push({
+        id: "7-locked",
+        title: "Super Economizador",
+        description: "Economizou R$ 50.000 no total",
+        icon: "crown",
+        category: "savings",
+        unlockedAt: null,
+      })
+    }
+
+    result.push({
+      id: "8",
+      title: "Maratonista",
+      description: "12 meses consecutivos batendo metas",
+      icon: "zap",
+      category: "streak",
+      unlockedAt: null,
+    })
+
+    result.push({
+      id: "9",
+      title: "Regra de Ouro",
+      description: "Seguiu a regra 50/30/20 por 6 meses",
+      icon: "award",
+      category: "budget",
+      unlockedAt: null,
+    })
+
+    return result
+  }, [goals])
 
   // Filter goals by tab
   const filteredGoals = useMemo(() => {
@@ -291,34 +274,27 @@ export default function MetasPage() {
         color: data.color || null,
         icon: null,
         status: "active",
-        userId: "1",
+        userId: "",
         createdAt: new Date(),
         updatedAt: new Date(),
       }
 
-      setGoals((prev) => [newGoal, ...prev])
+      addGoal(newGoal)
       toast({
         title: "Meta criada",
         description: "Sua nova meta foi criada com sucesso!",
       })
     } else if (editingGoal) {
-      setGoals((prev) =>
-        prev.map((g) =>
-          g.id === editingGoal.id
-            ? {
-                ...g,
-                name: data.name,
-                description: data.description || null,
-                type: data.type,
-                targetAmount: data.targetAmount,
-                currentAmount: data.currentAmount,
-                deadline: data.deadline || null,
-                color: data.color || null,
-                updatedAt: new Date(),
-              }
-            : g
-        )
-      )
+      updateGoal(editingGoal.id, {
+        name: data.name,
+        description: data.description || null,
+        type: data.type,
+        targetAmount: data.targetAmount,
+        currentAmount: data.currentAmount,
+        deadline: data.deadline || null,
+        color: data.color || null,
+        updatedAt: new Date(),
+      })
       toast({
         title: "Meta atualizada",
         description: "Sua meta foi atualizada com sucesso!",
@@ -327,11 +303,7 @@ export default function MetasPage() {
   }
 
   const handleStatusChange = (id: string, status: GoalStatus) => {
-    setGoals((prev) =>
-      prev.map((g) =>
-        g.id === id ? { ...g, status, updatedAt: new Date() } : g
-      )
-    )
+    updateGoal(id, { status, updatedAt: new Date() })
     toast({
       title: "Meta atualizada",
       description: `A meta foi ${
@@ -345,7 +317,7 @@ export default function MetasPage() {
   }
 
   const handleDeleteGoal = (id: string) => {
-    setGoals((prev) => prev.filter((g) => g.id !== id))
+    deleteGoalStore(id)
     toast({
       title: "Meta excluída",
       description: "A meta foi excluída com sucesso.",
@@ -359,12 +331,12 @@ export default function MetasPage() {
       name: data.name,
       config: data.config,
       isActive: data.isActive,
-      userId: "1",
+      userId: "",
       createdAt: new Date(),
       updatedAt: new Date(),
     }
 
-    setAdvancedGoals((prev) => [newAdvancedGoal, ...prev])
+    _setAdvancedGoals((prev) => [newAdvancedGoal, ...prev])
 
     const typeLabels: Record<string, string> = {
       category_limit: "Limite de Categoria",
@@ -378,6 +350,11 @@ export default function MetasPage() {
       description: `${typeLabels[data.config.type]} "${data.name}" foi criada com sucesso!`,
     })
   }
+
+  // Convert categories for modal (expense type only)
+  const expenseCategories = useMemo(() => {
+    return categories.filter(c => c.type === "expense")
+  }, [categories])
 
   return (
     <div className="space-y-6 page-transition">
@@ -434,10 +411,10 @@ export default function MetasPage() {
         <TabsContent value="all" className="mt-6 space-y-8">
           {/* Budget Rule Card - Featured */}
           <BudgetRuleCard
-            totalIncome={mockBudgetData.totalIncome}
-            essentialsSpent={mockBudgetData.essentialsSpent}
-            lifestyleSpent={mockBudgetData.lifestyleSpent}
-            investmentsSpent={mockBudgetData.investmentsSpent}
+            totalIncome={budgetData.totalIncome}
+            essentialsSpent={budgetData.essentialsSpent}
+            lifestyleSpent={budgetData.lifestyleSpent}
+            investmentsSpent={budgetData.investmentsSpent}
             className="lg:col-span-2"
           />
 
@@ -462,7 +439,7 @@ export default function MetasPage() {
           )}
 
           {/* Achievements */}
-          <AchievementsSection achievements={mockAchievements} />
+          <AchievementsSection achievements={achievements} />
 
           {/* Completed Goals */}
           {completedGoals.length > 0 && (
@@ -501,6 +478,21 @@ export default function MetasPage() {
                   />
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Empty state */}
+          {goals.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Target className="h-12 w-12 text-muted-foreground mb-4" />
+              <p className="text-lg font-medium">Nenhuma meta criada</p>
+              <p className="text-sm text-muted-foreground mb-4">
+                Crie sua primeira meta para começar a acompanhar seu progresso
+              </p>
+              <Button onClick={handleOpenCreateModal}>
+                <Plus className="mr-2 h-4 w-4" />
+                Criar Primeira Meta
+              </Button>
             </div>
           )}
         </TabsContent>
@@ -618,14 +610,14 @@ export default function MetasPage() {
         {/* Budget 50/30/20 tab */}
         <TabsContent value="budget" className="mt-6 space-y-6">
           <BudgetRuleCard
-            totalIncome={mockBudgetData.totalIncome}
-            essentialsSpent={mockBudgetData.essentialsSpent}
-            lifestyleSpent={mockBudgetData.lifestyleSpent}
-            investmentsSpent={mockBudgetData.investmentsSpent}
+            totalIncome={budgetData.totalIncome}
+            essentialsSpent={budgetData.essentialsSpent}
+            lifestyleSpent={budgetData.lifestyleSpent}
+            investmentsSpent={budgetData.investmentsSpent}
           />
 
           <AchievementsSection
-            achievements={mockAchievements.filter(
+            achievements={achievements.filter(
               (a) => a.category === "budget" || a.category === "streak"
             )}
           />
@@ -659,7 +651,7 @@ export default function MetasPage() {
         open={isAdvancedModalOpen}
         onOpenChange={setIsAdvancedModalOpen}
         mode="create"
-        categories={mockCategories}
+        categories={expenseCategories}
         onSubmit={handleAdvancedGoalSubmit}
       />
     </div>

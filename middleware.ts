@@ -2,16 +2,31 @@ import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
 
 /**
- * Middleware for Supabase Auth session refresh
+ * Middleware for Supabase Auth session refresh + API protection
  *
  * This middleware:
  * 1. Refreshes the auth token if needed
  * 2. Updates cookies with the new session
- * 3. Handles protected routes (optional)
+ * 3. Protects dashboard routes (requires auth)
+ * 4. Protects API routes (requires auth, except public endpoints)
  *
  * Note: If Supabase environment variables are not configured,
  * the middleware will pass through without auth handling.
  */
+
+// APIs que NÃO precisam de autenticação
+const PUBLIC_API_ROUTES = [
+  "/api/auth/callback",
+  "/api/auth/signout",
+  "/api/health",
+]
+
+// APIs que precisam de rate limit mais restritivo
+const STRICT_RATE_LIMIT_ROUTES = [
+  "/api/auth",
+  "/api/ocr",
+]
+
 export async function middleware(request: NextRequest) {
   // Check if Supabase is configured
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -53,44 +68,67 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Optional: Protect routes that require authentication
-  // Uncomment the following block to enable route protection
-  /*
-  const protectedRoutes = ['/dashboard', '/transacoes', '/investimentos', '/metas', '/configuracoes']
-  const isProtectedRoute = protectedRoutes.some(route =>
-    request.nextUrl.pathname.startsWith(route)
+  const pathname = request.nextUrl.pathname
+
+  // ===== API ROUTE PROTECTION =====
+  if (pathname.startsWith("/api/")) {
+    // Skip protection for public API routes
+    const isPublicApi = PUBLIC_API_ROUTES.some((route) =>
+      pathname.startsWith(route)
+    )
+
+    if (!isPublicApi && !user) {
+      return NextResponse.json(
+        { error: "Não autorizado" },
+        { status: 401 }
+      )
+    }
+
+    // Add rate limit headers (informational)
+    const isStrictRoute = STRICT_RATE_LIMIT_ROUTES.some((route) =>
+      pathname.startsWith(route)
+    )
+
+    supabaseResponse.headers.set(
+      "X-RateLimit-Policy",
+      isStrictRoute ? "strict" : "normal"
+    )
+
+    return supabaseResponse
+  }
+
+  // ===== PAGE ROUTE PROTECTION =====
+  // Protected routes that require authentication
+  const protectedRoutes = ["/dashboard", "/transacoes", "/contas", "/investimentos", "/metas", "/configuracoes"]
+  const isProtectedRoute = protectedRoutes.some((route) =>
+    pathname.startsWith(route)
   )
 
+  // Auth routes that should redirect to dashboard if already authenticated
+  const authRoutes = ["/login", "/signup", "/reset-password"]
+  const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route))
+
+  // Redirect unauthenticated users from protected routes to login
   if (isProtectedRoute && !user) {
-    // Redirect to login page if not authenticated
     const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    url.searchParams.set('redirectTo', request.nextUrl.pathname)
+    url.pathname = "/login"
+    url.searchParams.set("redirectTo", pathname)
     return NextResponse.redirect(url)
   }
-  */
 
-  // Optional: Redirect authenticated users away from auth pages
-  // Uncomment the following block to enable
-  /*
-  const authRoutes = ['/login', '/signup', '/reset-password']
-  const isAuthRoute = authRoutes.some(route =>
-    request.nextUrl.pathname.startsWith(route)
-  )
-
+  // Redirect authenticated users from auth routes to dashboard
   if (isAuthRoute && user) {
     const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
+    url.pathname = "/dashboard"
     return NextResponse.redirect(url)
   }
-  */
 
   return supabaseResponse
 }
 
 /**
  * Configure which routes the middleware should run on
- * Excludes static files, images, and API routes
+ * Includes API routes for protection
  */
 export const config = {
   matcher: [
@@ -99,8 +137,7 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - public folder files
-     * - api routes (handled separately)
+     * - public folder files (svg, png, jpg, etc)
      */
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],

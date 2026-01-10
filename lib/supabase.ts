@@ -2,6 +2,119 @@ import { createBrowserClient } from "@supabase/ssr"
 import { createClient } from "@supabase/supabase-js"
 
 // ===========================================
+// Database Types (matching Prisma schema)
+// ===========================================
+
+export type DbAccountType = "CORRENTE" | "POUPANCA" | "CARTAO_CREDITO" | "INVESTIMENTO"
+export type DbCategoryType = "RECEITA" | "DESPESA" | "INVESTIMENTO"
+export type DbCategoryGroup = "ESSENCIAL" | "INVESTIMENTO" | "LIVRE"
+export type DbTransactionType = "ENTRADA" | "SAIDA" | "TRANSFERENCIA" | "INVESTIMENTO"
+export type DbInvestmentType = "RENDA_FIXA" | "RENDA_VARIAVEL" | "CRIPTO" | "FUNDO"
+export type DbGoalType = "ECONOMIA_CATEGORIA" | "INVESTIMENTO_MENSAL" | "PATRIMONIO" | "REGRA_PERCENTUAL"
+export type DbOwnershipType = "CASA" | "PESSOAL"
+
+export interface DbUser {
+  id: string
+  nome: string
+  email: string
+  avatar: string | null
+  is_onboarded: boolean
+  renda_mensal: number | null
+  created_at: string
+  updated_at: string
+}
+
+export interface DbAccount {
+  id: string
+  nome: string
+  tipo: DbAccountType
+  banco: string | null
+  saldo_inicial: number
+  cor: string | null
+  icone: string | null
+  ativo: boolean
+  user_id: string
+  created_at: string
+  updated_at: string
+}
+
+export interface DbCategory {
+  id: string
+  nome: string
+  tipo: DbCategoryType
+  cor: string
+  icone: string | null
+  grupo: DbCategoryGroup
+  orcamento_mensal: number | null
+  created_at: string
+  updated_at: string
+}
+
+export interface DbTransaction {
+  id: string
+  descricao: string
+  valor: number
+  tipo: DbTransactionType
+  data: string
+  recorrente: boolean
+  parcelas: number | null
+  parcela_atual: number | null
+  transacao_pai_id: string | null
+  tags: string[]
+  anexo_url: string | null
+  notas: string | null
+  ownership: DbOwnershipType
+  category_id: string | null
+  account_id: string | null
+  user_id: string
+  created_at: string
+  updated_at: string
+}
+
+export interface DbInvestment {
+  id: string
+  nome: string
+  tipo: DbInvestmentType
+  instituicao: string | null
+  valor_aplicado: number
+  valor_atual: number
+  rentabilidade: number
+  data_aplicacao: string
+  data_vencimento: string | null
+  user_id: string
+  created_at: string
+  updated_at: string
+}
+
+export interface DbGoal {
+  id: string
+  nome: string
+  tipo: DbGoalType
+  valor_meta: number
+  valor_atual: number
+  prazo: string | null
+  ativo: boolean
+  category_id: string | null
+  user_id: string
+  created_at: string
+  updated_at: string
+}
+
+export interface DbBudget {
+  id: string
+  mes_ano: string
+  projetado_50: number
+  projetado_30: number
+  projetado_20: number
+  realizado_50: number
+  realizado_30: number
+  realizado_20: number
+  user_id: string
+  created_at: string
+  updated_at: string
+}
+
+// ===========================================
 // Environment Variables
 // ===========================================
 
@@ -103,4 +216,4 @@ export function getSupabaseBrowserClient() {
 // Type exports
 // ===========================================
 
-export type { User, Session } from "@supabase/supabase-js"
+export type { User as SupabaseUser, Session as SupabaseSession } from "@supabase/auth-js"

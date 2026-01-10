@@ -34,9 +34,9 @@ interface CustomTooltipProps {
 }
 
 function CustomTooltip({ active, payload }: CustomTooltipProps) {
-  if (!active || !payload || !payload.length) return null
+  const data = payload?.[0]
+  if (!active || !data) return null
 
-  const data = payload[0]
   return (
     <div className="bg-popover text-popover-foreground border border-border rounded-lg px-3 py-2 shadow-lg">
       <p className="font-semibold text-sm">{data.name}</p>

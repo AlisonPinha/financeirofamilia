@@ -103,7 +103,9 @@ export function formatMesAno(date: Date): string {
 }
 
 export function parseMesAno(mesAno: string): Date {
-  const [year, month] = mesAno.split("-").map(Number)
+  const parts = mesAno.split("-").map(Number)
+  const year = parts[0] ?? 2024
+  const month = parts[1] ?? 1
   return new Date(year, month - 1, 1)
 }
 

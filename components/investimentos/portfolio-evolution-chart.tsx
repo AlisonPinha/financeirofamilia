@@ -184,7 +184,7 @@ export function PortfolioEvolutionChart({
                     type="monotone"
                     dataKey={type}
                     name={type}
-                    stroke={typeConfig[type].color}
+                    stroke={typeConfig[type]?.color ?? "#64748b"}
                     strokeWidth={2}
                     dot={false}
                     activeDot={{ r: 4 }}
@@ -208,15 +208,19 @@ export function PortfolioEvolutionChart({
         {/* Type Legend */}
         {showByType && (
           <div className="flex flex-wrap gap-4 justify-center mt-4 pt-4 border-t">
-            {availableTypes.map((type) => (
-              <div key={type} className="flex items-center gap-2 text-sm">
-                <div
-                  className="h-3 w-3 rounded-full"
-                  style={{ backgroundColor: typeConfig[type].color }}
-                />
-                <span className="text-muted-foreground">{typeConfig[type].label}</span>
-              </div>
-            ))}
+            {availableTypes.map((type) => {
+              const config = typeConfig[type]
+              if (!config) return null
+              return (
+                <div key={type} className="flex items-center gap-2 text-sm">
+                  <div
+                    className="h-3 w-3 rounded-full"
+                    style={{ backgroundColor: config.color }}
+                  />
+                  <span className="text-muted-foreground">{config.label}</span>
+                </div>
+              )
+            })}
           </div>
         )}
       </CardContent>

@@ -35,7 +35,7 @@ export function TopExpenses({
     .slice(0, 5)
 
   // Calculate max for proportion bars
-  const maxExpense = topExpenses.length > 0 ? topExpenses[0].currentAmount : 0
+  const maxExpense = topExpenses[0]?.currentAmount ?? 0
 
   return (
     <Card className={cn(className)}>
@@ -162,7 +162,7 @@ export function TopExpenses({
         )}
 
         {/* Insights */}
-        {topExpenses.length > 0 && (
+        {topExpenses[0] && (
           <div className="pt-4 border-t">
             <p className="text-sm font-medium mb-2">Insights</p>
             <div className="space-y-2 text-sm text-muted-foreground">

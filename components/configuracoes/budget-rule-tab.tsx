@@ -97,7 +97,7 @@ export function BudgetRuleTab({
   }, [categories])
 
   const handleSliderChange = (group: BudgetGroup, value: number[]) => {
-    const newValue = value[0]
+    const newValue = value[0] ?? 0
     const diff = newValue - localConfig[`${group}Percent` as keyof BudgetRuleConfig]
 
     // Distribute the difference to other sliders proportionally
@@ -124,7 +124,7 @@ export function BudgetRuleTab({
 
     // Ensure total is exactly 100
     const newTotal = newConfig.essentialsPercent + newConfig.lifestylePercent + newConfig.investmentsPercent
-    if (newTotal !== 100) {
+    if (newTotal !== 100 && otherGroups[0]) {
       const adjustment = 100 - newTotal
       const adjustGroup = otherGroups[0].key
       newConfig[`${adjustGroup}Percent` as keyof BudgetRuleConfig] += adjustment

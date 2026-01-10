@@ -328,15 +328,19 @@ export function TransactionCardList({
     const groups: Record<string, TransactionCardProps[]> = {}
 
     transactions.forEach((transaction) => {
-      const dateKey =
+      const dateStr =
         typeof transaction.date === "string"
           ? transaction.date.split("T")[0]
           : transaction.date.toISOString().split("T")[0]
+      const dateKey = dateStr ?? "unknown"
 
       if (!groups[dateKey]) {
         groups[dateKey] = []
       }
-      groups[dateKey].push(transaction)
+      const group = groups[dateKey]
+      if (group) {
+        group.push(transaction)
+      }
     })
 
     return Object.entries(groups).sort(([a], [b]) => b.localeCompare(a))

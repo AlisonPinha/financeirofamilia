@@ -60,12 +60,14 @@ export function MoneyInput({
     const parts = cleaned.split(",")
     let formatted: string
 
+    const firstPart = parts[0] ?? ""
+    const secondPart = parts[1] ?? ""
     if (parts.length > 2) {
       // Multiple commas - keep first part and last part
-      formatted = parts[0] + "," + parts.slice(1).join("")
+      formatted = firstPart + "," + parts.slice(1).join("")
     } else if (parts.length === 2) {
       // One comma - limit decimal places to 2
-      formatted = parts[0] + "," + parts[1].slice(0, 2)
+      formatted = firstPart + "," + secondPart.slice(0, 2)
     } else {
       formatted = cleaned
     }

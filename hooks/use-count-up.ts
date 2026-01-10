@@ -49,7 +49,9 @@ export function useCountUp({
   const formatNumber = useCallback(
     (num: number): string => {
       const fixedNum = num.toFixed(decimals)
-      const [intPart, decPart] = fixedNum.split(".")
+      const parts = fixedNum.split(".")
+      const intPart = parts[0] ?? "0"
+      const decPart = parts[1]
 
       // Add thousand separators
       const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, separator)

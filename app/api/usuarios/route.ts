@@ -1,202 +1,192 @@
-import { NextRequest, NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
+import { NextRequest, NextResponse } from "next/server";
+import { getAuthenticatedUser, getSupabaseClient } from "@/lib/supabase/auth-helper";
 
-// GET /api/usuarios - List users or get single user
-export async function GET(request: NextRequest) {
+// GET - Obter dados do usuário logado (retorna array para compatibilidade com SWR)
+export async function GET() {
   try {
-    const { searchParams } = new URL(request.url)
-    const id = searchParams.get("id")
-    const email = searchParams.get("email")
+    const auth = await getAuthenticatedUser();
+    if (auth.error) return auth.error;
 
-    // Get single user by id or email
-    if (id || email) {
-      const user = await prisma.user.findFirst({
-        where: id ? { id } : { email: email! },
-        include: {
-          accounts: {
-            where: { ativo: true },
-            orderBy: { nome: "asc" },
-          },
-          _count: {
-            select: {
-              transactions: true,
-              investments: true,
-              goals: true,
-            },
-          },
-        },
-      })
+    const supabase = await getSupabaseClient();
 
-      if (!user) {
-        return NextResponse.json(
-          { error: "Usuário não encontrado" },
-          { status: 404 }
-        )
-      }
+    // Buscar usuário no banco
+    const { data: user, error } = await supabase
+      .from("users")
+      .select("*")
+      .eq("id", auth.user.id)
+      .single();
 
-      return NextResponse.json(user)
+    // Se usuário não existe na tabela users, retorna array vazio
+    // (usuário novo que ainda não completou onboarding)
+    if (error || !user) {
+      return NextResponse.json([]);
     }
 
-    // List all users (family members)
-    const users = await prisma.user.findMany({
-      orderBy: { nome: "asc" },
-      include: {
-        _count: {
-          select: {
-            transactions: true,
-          },
-        },
-      },
-    })
+    // Get counts
+    const [accountsCount, transactionsCount, investmentsCount, goalsCount] = await Promise.all([
+      supabase.from("accounts").select("id", { count: "exact", head: true }).eq("user_id", auth.user.id).eq("ativo", true),
+      supabase.from("transactions").select("id", { count: "exact", head: true }).eq("user_id", auth.user.id),
+      supabase.from("investments").select("id", { count: "exact", head: true }).eq("user_id", auth.user.id),
+      supabase.from("goals").select("id", { count: "exact", head: true }).eq("user_id", auth.user.id),
+    ]);
 
-    return NextResponse.json(users)
+    // Retorna array com o usuário para compatibilidade com SWR
+    return NextResponse.json([{
+      ...user,
+      _count: {
+        accounts: accountsCount.count || 0,
+        transactions: transactionsCount.count || 0,
+        investments: investmentsCount.count || 0,
+        goals: goalsCount.count || 0,
+      },
+    }]);
   } catch (error) {
-    console.error("Error fetching users:", error)
+    console.error("Erro ao buscar usuário:", error);
     return NextResponse.json(
-      { error: "Erro ao buscar usuários" },
+      { error: "Erro ao buscar usuário" },
       { status: 500 }
-    )
+    );
   }
 }
 
-// POST /api/usuarios - Create user
+// POST - Criar usuário (chamado pelo auth callback)
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
+    const auth = await getAuthenticatedUser();
+    if (auth.error) return auth.error;
 
-    const { nome, email, avatar } = body
+    const body = await request.json();
+    const supabase = await getSupabaseClient();
 
-    if (!nome || !email) {
-      return NextResponse.json(
-        { error: "Nome e email são obrigatórios" },
-        { status: 400 }
-      )
-    }
+    const { nome, avatar, isOnboarded } = body;
 
-    // Check if email already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    })
+    // Verificar se usuário já existe
+    const { data: existingUser } = await supabase
+      .from("users")
+      .select("id")
+      .eq("id", auth.user.id)
+      .single();
 
     if (existingUser) {
       return NextResponse.json(
-        { error: "Email já cadastrado" },
+        { error: "Usuário já cadastrado" },
         { status: 400 }
-      )
+      );
     }
 
-    const user = await prisma.user.create({
-      data: {
-        nome,
-        email,
-        avatar,
-      },
-    })
+    // Criar usuário com o ID do Supabase Auth
+    const { data: user, error } = await supabase
+      .from("users")
+      .insert({
+        id: auth.user.id,
+        nome: nome || auth.user.email.split("@")[0],
+        email: auth.user.email,
+        avatar: avatar || null,
+        is_onboarded: isOnboarded ?? false,
+      })
+      .select()
+      .single();
 
-    return NextResponse.json(user, { status: 201 })
+    if (error) throw error;
+
+    return NextResponse.json(user, { status: 201 });
   } catch (error) {
-    console.error("Error creating user:", error)
+    console.error("Erro ao criar usuário:", error);
     return NextResponse.json(
       { error: "Erro ao criar usuário" },
       { status: 500 }
-    )
+    );
   }
 }
 
-// PUT /api/usuarios - Update user
+// PUT - Atualizar dados do usuário logado
 export async function PUT(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { id, ...data } = body
+    const auth = await getAuthenticatedUser();
+    if (auth.error) return auth.error;
 
-    if (!id) {
-      return NextResponse.json(
-        { error: "ID do usuário é obrigatório" },
-        { status: 400 }
-      )
-    }
+    const body = await request.json();
+    const supabase = await getSupabaseClient();
 
-    // Check if email is being changed and already exists
-    if (data.email) {
-      const existingUser = await prisma.user.findFirst({
-        where: {
-          email: data.email,
-          id: { not: id },
-        },
-      })
+    const { nome, avatar, isOnboarded, rendaMensal } = body;
 
-      if (existingUser) {
-        return NextResponse.json(
-          { error: "Email já está em uso" },
-          { status: 400 }
-        )
-      }
-    }
+    // Verificar se usuário existe
+    const { data: existingUser } = await supabase
+      .from("users")
+      .select("id")
+      .eq("id", auth.user.id)
+      .single();
 
-    const user = await prisma.user.update({
-      where: { id },
-      data,
-    })
-
-    return NextResponse.json(user)
-  } catch (error) {
-    console.error("Error updating user:", error)
-    return NextResponse.json(
-      { error: "Erro ao atualizar usuário" },
-      { status: 500 }
-    )
-  }
-}
-
-// DELETE /api/usuarios - Delete user
-export async function DELETE(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url)
-    const id = searchParams.get("id")
-
-    if (!id) {
-      return NextResponse.json(
-        { error: "ID do usuário é obrigatório" },
-        { status: 400 }
-      )
-    }
-
-    // Get count of user's data before deleting
-    const userData = await prisma.user.findUnique({
-      where: { id },
-      include: {
-        _count: {
-          select: {
-            transactions: true,
-            accounts: true,
-            investments: true,
-            goals: true,
-          },
-        },
-      },
-    })
-
-    if (!userData) {
+    if (!existingUser) {
       return NextResponse.json(
         { error: "Usuário não encontrado" },
         { status: 404 }
-      )
+      );
     }
 
-    // Delete user (cascades to all related data)
-    await prisma.user.delete({
-      where: { id },
-    })
+    const updateData: Record<string, unknown> = {};
+    if (nome !== undefined) updateData.nome = nome;
+    if (avatar !== undefined) updateData.avatar = avatar;
+    if (isOnboarded !== undefined) updateData.is_onboarded = isOnboarded;
+    if (rendaMensal !== undefined) updateData.renda_mensal = rendaMensal;
+
+    const { data: user, error } = await supabase
+      .from("users")
+      .update(updateData)
+      .eq("id", auth.user.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return NextResponse.json(user);
+  } catch (error) {
+    console.error("Erro ao atualizar usuário:", error);
+    return NextResponse.json(
+      { error: "Erro ao atualizar usuário" },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE - Deletar conta do usuário logado (e todos os dados)
+export async function DELETE() {
+  try {
+    const auth = await getAuthenticatedUser();
+    if (auth.error) return auth.error;
+
+    const supabase = await getSupabaseClient();
+
+    // Get counts before deleting
+    const [accountsCount, transactionsCount, investmentsCount, goalsCount] = await Promise.all([
+      supabase.from("accounts").select("id", { count: "exact", head: true }).eq("user_id", auth.user.id),
+      supabase.from("transactions").select("id", { count: "exact", head: true }).eq("user_id", auth.user.id),
+      supabase.from("investments").select("id", { count: "exact", head: true }).eq("user_id", auth.user.id),
+      supabase.from("goals").select("id", { count: "exact", head: true }).eq("user_id", auth.user.id),
+    ]);
+
+    // Delete user (cascade should handle related data)
+    const { error } = await supabase
+      .from("users")
+      .delete()
+      .eq("id", auth.user.id);
+
+    if (error) throw error;
 
     return NextResponse.json({
       success: true,
-      deletedData: userData._count,
-    })
+      deletedData: {
+        accounts: accountsCount.count || 0,
+        transactions: transactionsCount.count || 0,
+        investments: investmentsCount.count || 0,
+        goals: goalsCount.count || 0,
+      },
+    });
   } catch (error) {
-    console.error("Error deleting user:", error)
+    console.error("Erro ao deletar usuário:", error);
     return NextResponse.json(
       { error: "Erro ao deletar usuário" },
       { status: 500 }
-    )
+    );
   }
 }

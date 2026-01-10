@@ -46,7 +46,9 @@ export function SwipeableRow({
   const handleTouchStart = React.useCallback(
     (e: React.TouchEvent) => {
       if (disabled) return
-      startXRef.current = e.touches[0].clientX
+      const touch = e.touches[0]
+      if (!touch) return
+      startXRef.current = touch.clientX
       currentXRef.current = translateX
       setIsDragging(true)
     },
@@ -56,8 +58,10 @@ export function SwipeableRow({
   const handleTouchMove = React.useCallback(
     (e: React.TouchEvent) => {
       if (!isDragging || disabled) return
+      const touch = e.touches[0]
+      if (!touch) return
 
-      const currentX = e.touches[0].clientX
+      const currentX = touch.clientX
       const diff = currentX - startXRef.current
       let newTranslateX = currentXRef.current + diff
 

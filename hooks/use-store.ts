@@ -25,9 +25,11 @@ interface AppState {
   investments: Investment[]
   goals: Goal[]
   isLoading: boolean
+  isDataLoaded: boolean
   isSidebarOpen: boolean
   isAddTransactionOpen: boolean
   addTransactionType: "expense" | "income" | "transfer"
+  isImportDocumentOpen: boolean
   notifications: Notification[]
 
   // User actions
@@ -39,6 +41,7 @@ interface AppState {
   setAddTransactionOpen: (open: boolean) => void
   setAddTransactionType: (type: "expense" | "income" | "transfer") => void
   openAddTransaction: (type: "expense" | "income" | "transfer") => void
+  setImportDocumentOpen: (open: boolean) => void
   addNotification: (notification: Omit<Notification, "id">) => void
   removeNotification: (id: string) => void
 
@@ -74,6 +77,7 @@ interface AppState {
 
   // Loading
   setIsLoading: (isLoading: boolean) => void
+  setIsDataLoaded: (loaded: boolean) => void
 }
 
 const currentDate = new Date()
@@ -92,9 +96,11 @@ export const useStore = create<AppState>()(
       investments: [],
       goals: [],
       isLoading: false,
+      isDataLoaded: false,
       isSidebarOpen: false,
       isAddTransactionOpen: false,
       addTransactionType: "expense",
+      isImportDocumentOpen: false,
       notifications: [],
 
       // User actions
@@ -106,6 +112,7 @@ export const useStore = create<AppState>()(
       setAddTransactionOpen: (isAddTransactionOpen) => set({ isAddTransactionOpen }),
       setAddTransactionType: (addTransactionType) => set({ addTransactionType }),
       openAddTransaction: (type) => set({ addTransactionType: type, isAddTransactionOpen: true }),
+      setImportDocumentOpen: (isImportDocumentOpen) => set({ isImportDocumentOpen }),
       addNotification: (notification) =>
         set((state) => ({
           notifications: [
@@ -195,19 +202,19 @@ export const useStore = create<AppState>()(
 
       // Loading
       setIsLoading: (isLoading) => set({ isLoading }),
+      setIsDataLoaded: (isDataLoaded) => set({ isDataLoaded }),
     }),
     {
       name: "financeiro-familia-storage",
+      // SEGURANÇA: Persistir apenas preferências do usuário, NÃO dados financeiros
+      // Dados sensíveis devem ser carregados da API a cada sessão
       partialize: (state) => ({
-        user: state.user,
-        familyMembers: state.familyMembers,
+        // Preferências de UI apenas
         viewMode: state.viewMode,
         selectedPeriod: state.selectedPeriod,
-        transactions: state.transactions,
-        accounts: state.accounts,
-        categories: state.categories,
-        investments: state.investments,
-        goals: state.goals,
+        isSidebarOpen: state.isSidebarOpen,
+        // NÃO persistir: user, transactions, accounts, categories, investments, goals
+        // Esses dados serão sempre carregados da API autenticada
       }),
     }
   )

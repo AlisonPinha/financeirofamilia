@@ -55,6 +55,7 @@ interface AccountWithStatus {
   balance: number
   color: string
   icon?: string
+  bank?: string
   isActive: boolean
 }
 
@@ -83,6 +84,30 @@ const colorOptions = [
   { value: "#ec4899", label: "Rosa" },
 ]
 
+const bankOptions = [
+  { value: "", label: "Selecione um banco" },
+  { value: "bradesco", label: "Bradesco" },
+  { value: "itau", label: "Itaú" },
+  { value: "santander", label: "Santander" },
+  { value: "bb", label: "Banco do Brasil" },
+  { value: "caixa", label: "Caixa Econômica" },
+  { value: "nubank", label: "Nubank" },
+  { value: "inter", label: "Banco Inter" },
+  { value: "c6", label: "C6 Bank" },
+  { value: "btg", label: "BTG Pactual" },
+  { value: "xp", label: "XP Investimentos" },
+  { value: "rico", label: "Rico" },
+  { value: "clear", label: "Clear" },
+  { value: "modal", label: "Modal" },
+  { value: "safra", label: "Safra" },
+  { value: "original", label: "Banco Original" },
+  { value: "pan", label: "Banco Pan" },
+  { value: "neon", label: "Neon" },
+  { value: "picpay", label: "PicPay" },
+  { value: "mercadopago", label: "Mercado Pago" },
+  { value: "outro", label: "Outro" },
+]
+
 // Icon options available for future use
 // const iconOptions = [
 //   { value: "wallet", label: "Carteira", icon: Wallet },
@@ -104,6 +129,7 @@ export function AccountsTab({ accounts, onAccountsChange }: AccountsTabProps) {
     balance: 0,
     color: "#3b82f6",
     icon: "wallet",
+    bank: "",
     isActive: true,
   })
 
@@ -115,6 +141,7 @@ export function AccountsTab({ accounts, onAccountsChange }: AccountsTabProps) {
       balance: 0,
       color: "#3b82f6",
       icon: "wallet",
+      bank: "",
       isActive: true,
     })
     setIsDialogOpen(true)
@@ -128,6 +155,7 @@ export function AccountsTab({ accounts, onAccountsChange }: AccountsTabProps) {
       balance: account.balance,
       color: account.color,
       icon: account.icon || "wallet",
+      bank: account.bank || "",
       isActive: account.isActive,
     })
     setIsDialogOpen(true)
@@ -209,6 +237,12 @@ export function AccountsTab({ accounts, onAccountsChange }: AccountsTabProps) {
     return config?.label || type
   }
 
+  const getBankLabel = (bankValue: string | undefined) => {
+    if (!bankValue) return null
+    const bank = bankOptions.find((b) => b.value === bankValue)
+    return bank?.label || bankValue
+  }
+
   const totalBalance = accounts
     .filter((a) => a.isActive && a.type !== "credit")
     .reduce((sum, a) => sum + a.balance, 0)
@@ -279,6 +313,7 @@ export function AccountsTab({ accounts, onAccountsChange }: AccountsTabProps) {
                       </div>
                       <p className="text-sm text-muted-foreground">
                         {getAccountTypeLabel(account.type)}
+                        {account.bank && ` • ${getBankLabel(account.bank)}`}
                       </p>
                     </div>
                   </div>
@@ -392,6 +427,28 @@ export function AccountsTab({ accounts, onAccountsChange }: AccountsTabProps) {
                         <type.icon className="h-4 w-4" />
                         {type.label}
                       </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Bank */}
+            <div className="space-y-2">
+              <Label>Banco / Instituição</Label>
+              <Select
+                value={formData.bank}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, bank: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um banco" />
+                </SelectTrigger>
+                <SelectContent>
+                  {bankOptions.filter(b => b.value !== "").map((bank) => (
+                    <SelectItem key={bank.value} value={bank.value}>
+                      {bank.label}
                     </SelectItem>
                   ))}
                 </SelectContent>

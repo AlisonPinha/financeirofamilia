@@ -69,5 +69,31 @@ export {
   DATE_FORMAT,
 } from "./constants"
 
-// Prisma client
-export { prisma } from "./prisma"
+// Supabase client
+export { createSupabaseBrowserClient, createSupabaseServerClient } from "./supabase"
+
+// Auth helpers
+export { getAuthenticatedUser, getSupabaseClient } from "./supabase/auth-helper"
+
+// Logger
+export { logger, withLogging } from "./logger"
+
+// Rate limiting
+export {
+  checkRateLimit,
+  rateLimitConfigs,
+  getClientIP,
+  type RateLimitResult,
+} from "./rate-limit"
+
+// Error monitoring
+export {
+  setUser,
+  addBreadcrumb,
+  captureException,
+  captureMessage,
+  initErrorMonitoring,
+  withErrorCapture,
+  createScope,
+  ErrorBoundaryHandler,
+} from "./error-monitor"

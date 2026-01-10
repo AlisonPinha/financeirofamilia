@@ -38,22 +38,26 @@ export function BottomSheet({
   const startYRef = React.useRef(0)
   const currentYRef = React.useRef(0)
 
-  const currentHeight = snapPoints[currentSnap] * 100
+  const currentHeight = (snapPoints[currentSnap] ?? 0.5) * 100
 
   const handleClose = () => {
     onOpenChange(false)
   }
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    startYRef.current = e.touches[0].clientY
+    const touch = e.touches[0]
+    if (!touch) return
+    startYRef.current = touch.clientY
     currentYRef.current = 0
     setIsDragging(true)
   }
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!isDragging) return
+    const touch = e.touches[0]
+    if (!touch) return
 
-    const currentY = e.touches[0].clientY
+    const currentY = touch.clientY
     const diff = currentY - startYRef.current
     currentYRef.current = diff
 

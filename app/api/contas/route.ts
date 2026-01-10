@@ -1,76 +1,102 @@
-import { NextRequest, NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
+import { NextRequest, NextResponse } from "next/server";
+import { getAuthenticatedUser, getSupabaseClient } from "@/lib/supabase/auth-helper";
+import type { DbAccountType } from "@/lib/supabase";
 
-// GET /api/contas - List accounts
+// GET - Listar contas do usuário logado (OTIMIZADO: 2 queries em vez de N+1)
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const userId = searchParams.get("userId")
-    const ativo = searchParams.get("ativo")
-    const tipo = searchParams.get("tipo")
+    const auth = await getAuthenticatedUser();
+    if (auth.error) return auth.error;
 
-    if (!userId) {
-      return NextResponse.json(
-        { error: "userId é obrigatório" },
-        { status: 400 }
-      )
+    const supabase = await getSupabaseClient();
+    const { searchParams } = new URL(request.url);
+    const ativo = searchParams.get("ativo");
+    const tipo = searchParams.get("tipo");
+
+    // Query 1: Buscar todas as contas do usuário
+    let query = supabase
+      .from("accounts")
+      .select("*")
+      .eq("user_id", auth.user.id);
+
+    if (ativo !== null && ativo !== undefined) {
+      query = query.eq("ativo", ativo === "true");
+    }
+    if (tipo) {
+      query = query.eq("tipo", tipo);
     }
 
-    const where: Record<string, unknown> = { userId }
-    if (ativo !== null) where.ativo = ativo === "true"
-    if (tipo) where.tipo = tipo
+    query = query
+      .order("ativo", { ascending: false })
+      .order("nome", { ascending: true });
 
-    const accounts = await prisma.account.findMany({
-      where,
-      orderBy: [{ ativo: "desc" }, { nome: "asc" }],
-    })
+    const { data: accounts, error } = await query;
 
-    // Calculate current balance for each account
-    const accountsWithBalance = await Promise.all(
-      accounts.map(async (account) => {
-        const transactions = await prisma.transaction.aggregate({
-          where: { accountId: account.id },
-          _sum: { valor: true },
-        })
+    if (error) throw error;
 
-        // Calculate balance based on transaction types
-        const transactionsList = await prisma.transaction.findMany({
-          where: { accountId: account.id },
-          select: { valor: true, tipo: true },
-        })
+    if (!accounts || accounts.length === 0) {
+      return NextResponse.json({
+        accounts: [],
+        totals: { totalDisponivel: 0, totalCredito: 0, saldoLiquido: 0 },
+      });
+    }
 
-        let saldoTransacoes = 0
-        transactionsList.forEach((t) => {
-          if (t.tipo === "ENTRADA") {
-            saldoTransacoes += t.valor
-          } else if (t.tipo === "SAIDA") {
-            saldoTransacoes -= t.valor
-          }
-          // TRANSFERENCIA and INVESTIMENTO may need special handling
-        })
+    // Query 2: Buscar TODAS as transações das contas do usuário em UMA query
+    const accountIds = accounts.map(a => a.id);
 
-        return {
-          ...account,
-          saldoAtual: account.saldoInicial + saldoTransacoes,
-          totalTransacoes: transactions._sum.valor || 0,
+    const { data: allTransactions, error: txError } = await supabase
+      .from("transactions")
+      .select("account_id, valor, tipo")
+      .in("account_id", accountIds);
+
+    if (txError) throw txError;
+
+    // Agrupar transações por conta (no código, sem queries adicionais)
+    const transactionsByAccount = (allTransactions || []).reduce((acc, tx) => {
+      if (!acc[tx.account_id]) {
+        acc[tx.account_id] = [];
+      }
+      const entry = acc[tx.account_id];
+      if (entry) {
+        entry.push(tx);
+      }
+      return acc;
+    }, {} as Record<string, Array<{ account_id: string; valor: number; tipo: string }>>);
+
+    // Calcular saldo de cada conta
+    const accountsWithBalance = accounts.map((account) => {
+      const transactions = transactionsByAccount[account.id] || [];
+
+      let saldoTransacoes = 0;
+      transactions.forEach((t) => {
+        const valor = Number(t.valor) || 0;
+        if (t.tipo === "ENTRADA") {
+          saldoTransacoes += valor;
+        } else if (t.tipo === "SAIDA") {
+          saldoTransacoes -= valor;
         }
-      })
-    )
+      });
 
-    // Calculate totals
+      return {
+        ...account,
+        saldoAtual: (Number(account.saldo_inicial) || 0) + saldoTransacoes,
+      };
+    });
+
+    // Calcular totais
     const totals = accountsWithBalance.reduce(
       (acc, account) => {
         if (account.ativo) {
           if (account.tipo === "CARTAO_CREDITO") {
-            acc.totalCredito += account.saldoAtual
+            acc.totalCredito += account.saldoAtual;
           } else {
-            acc.totalDisponivel += account.saldoAtual
+            acc.totalDisponivel += account.saldoAtual;
           }
         }
-        return acc
+        return acc;
       },
       { totalDisponivel: 0, totalCredito: 0 }
-    )
+    );
 
     return NextResponse.json({
       accounts: accountsWithBalance,
@@ -78,124 +104,203 @@ export async function GET(request: NextRequest) {
         ...totals,
         saldoLiquido: totals.totalDisponivel - totals.totalCredito,
       },
-    })
+    });
   } catch (error) {
-    console.error("Error fetching accounts:", error)
+    console.error("Erro ao buscar contas:", error);
     return NextResponse.json(
       { error: "Erro ao buscar contas" },
       { status: 500 }
-    )
+    );
   }
 }
 
-// POST /api/contas - Create account
+// POST - Criar conta para o usuário logado
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
+    const auth = await getAuthenticatedUser();
+    if (auth.error) return auth.error;
 
-    const { nome, tipo, banco, saldoInicial, cor, icone, userId } = body
+    const body = await request.json();
+    const supabase = await getSupabaseClient();
 
-    if (!nome || !tipo || !userId) {
+    const { nome, tipo, banco, saldoInicial, cor, icone } = body;
+
+    // Validação
+    if (!nome?.trim()) {
       return NextResponse.json(
-        { error: "Campos obrigatórios faltando" },
+        { error: "Nome é obrigatório" },
         { status: 400 }
-      )
+      );
     }
 
-    const account = await prisma.account.create({
-      data: {
-        nome,
-        tipo,
-        banco,
-        saldoInicial: saldoInicial || 0,
-        cor,
-        icone,
-        userId,
-      },
-    })
+    if (!tipo) {
+      return NextResponse.json(
+        { error: "Tipo é obrigatório" },
+        { status: 400 }
+      );
+    }
 
-    return NextResponse.json(account, { status: 201 })
+    const { data: account, error } = await supabase
+      .from("accounts")
+      .insert({
+        user_id: auth.user.id, // SEMPRE usar o ID do usuário logado
+        nome: nome.trim(),
+        tipo: tipo as DbAccountType,
+        banco: banco || null,
+        saldo_inicial: saldoInicial || 0,
+        cor: cor || "#6366f1",
+        icone: icone || null,
+        ativo: true,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return NextResponse.json(account, { status: 201 });
   } catch (error) {
-    console.error("Error creating account:", error)
+    console.error("Erro ao criar conta:", error);
     return NextResponse.json(
       { error: "Erro ao criar conta" },
       { status: 500 }
-    )
+    );
   }
 }
 
-// PUT /api/contas - Update account
+// PUT - Atualizar conta do usuário logado
 export async function PUT(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { id, ...data } = body
+    const auth = await getAuthenticatedUser();
+    if (auth.error) return auth.error;
+
+    const body = await request.json();
+    const supabase = await getSupabaseClient();
+
+    const { id, nome, tipo, banco, saldoInicial, cor, icone, ativo } = body;
 
     if (!id) {
       return NextResponse.json(
         { error: "ID da conta é obrigatório" },
         { status: 400 }
-      )
+      );
     }
 
-    const account = await prisma.account.update({
-      where: { id },
-      data,
-    })
+    // Verificar se a conta pertence ao usuário
+    const { data: existingAccount } = await supabase
+      .from("accounts")
+      .select("id")
+      .eq("id", id)
+      .eq("user_id", auth.user.id)
+      .single();
 
-    return NextResponse.json(account)
+    if (!existingAccount) {
+      return NextResponse.json(
+        { error: "Conta não encontrada" },
+        { status: 404 }
+      );
+    }
+
+    const updateData: Record<string, unknown> = {};
+    if (nome !== undefined) updateData.nome = nome;
+    if (tipo !== undefined) updateData.tipo = tipo;
+    if (banco !== undefined) updateData.banco = banco;
+    if (saldoInicial !== undefined) updateData.saldo_inicial = saldoInicial;
+    if (cor !== undefined) updateData.cor = cor;
+    if (icone !== undefined) updateData.icone = icone;
+    if (ativo !== undefined) updateData.ativo = ativo;
+
+    const { data: account, error } = await supabase
+      .from("accounts")
+      .update(updateData)
+      .eq("id", id)
+      .eq("user_id", auth.user.id) // Garantir que só atualiza do próprio usuário
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return NextResponse.json(account);
   } catch (error) {
-    console.error("Error updating account:", error)
+    console.error("Erro ao atualizar conta:", error);
     return NextResponse.json(
       { error: "Erro ao atualizar conta" },
       { status: 500 }
-    )
+    );
   }
 }
 
-// DELETE /api/contas - Delete account (soft delete by deactivating)
+// DELETE - Deletar conta do usuário logado
 export async function DELETE(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const id = searchParams.get("id")
-    const force = searchParams.get("force") === "true"
+    const auth = await getAuthenticatedUser();
+    if (auth.error) return auth.error;
+
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+    const force = searchParams.get("force") === "true";
 
     if (!id) {
       return NextResponse.json(
         { error: "ID da conta é obrigatório" },
         { status: 400 }
-      )
+      );
+    }
+
+    const supabase = await getSupabaseClient();
+
+    // Verificar se a conta pertence ao usuário
+    const { data: existingAccount } = await supabase
+      .from("accounts")
+      .select("id")
+      .eq("id", id)
+      .eq("user_id", auth.user.id)
+      .single();
+
+    if (!existingAccount) {
+      return NextResponse.json(
+        { error: "Conta não encontrada" },
+        { status: 404 }
+      );
     }
 
     // Check if account has transactions
-    const transactionCount = await prisma.transaction.count({
-      where: { accountId: id },
-    })
+    const { count } = await supabase
+      .from("transactions")
+      .select("id", { count: "exact", head: true })
+      .eq("account_id", id);
 
-    if (transactionCount > 0 && !force) {
+    if (count && count > 0 && !force) {
       // Soft delete - just deactivate
-      await prisma.account.update({
-        where: { id },
-        data: { ativo: false },
-      })
+      const { error } = await supabase
+        .from("accounts")
+        .update({ ativo: false })
+        .eq("id", id)
+        .eq("user_id", auth.user.id);
+
+      if (error) throw error;
 
       return NextResponse.json({
         success: true,
         action: "deactivated",
-        transactionCount,
-      })
+        transactionCount: count,
+      });
     }
 
     // Hard delete if no transactions or force=true
-    await prisma.account.delete({
-      where: { id },
-    })
+    const { error } = await supabase
+      .from("accounts")
+      .delete()
+      .eq("id", id)
+      .eq("user_id", auth.user.id);
 
-    return NextResponse.json({ success: true, action: "deleted" })
+    if (error) throw error;
+
+    return NextResponse.json({ success: true, action: "deleted" });
   } catch (error) {
-    console.error("Error deleting account:", error)
+    console.error("Erro ao deletar conta:", error);
     return NextResponse.json(
       { error: "Erro ao deletar conta" },
       { status: 500 }
-    )
+    );
   }
 }

@@ -1,360 +1,415 @@
 "use client"
 
+import { useMemo, lazy, Suspense } from "react"
 import {
   SummaryCards,
   RecentTransactions,
-  BudgetRuleChart,
-  WeeklyFlowChart,
   GoalAlerts,
   AccountsSummary,
-  EndOfMonthProjection,
-  MonthlySavings,
-  MonthlyComparison,
-  TopExpenses,
-  CoupleRanking,
-  PersonalExpensesSummary,
 } from "@/components/dashboard"
 import { useStore } from "@/hooks/use-store"
-import type { Transaction, Goal, Account } from "@/types"
+import type { Transaction, Account } from "@/types"
+import { Skeleton } from "@/components/animations/skeleton"
 
-// Mock data for summary cards
-const mockSummaryData = {
-  totalBalance: 25000,
-  previousBalance: 22500,
-  totalIncome: 12500,
-  previousIncome: 11800,
-  totalExpenses: 7850,
-  previousExpenses: 8200,
-  totalInvested: 2500,
-  previousInvested: 2000,
-}
+// Lazy load heavy chart components
+const BudgetRuleChart = lazy(() => import("@/components/dashboard/budget-rule-chart").then(m => ({ default: m.BudgetRuleChart })))
+const WeeklyFlowChart = lazy(() => import("@/components/dashboard/weekly-flow-chart").then(m => ({ default: m.WeeklyFlowChart })))
+const EndOfMonthProjection = lazy(() => import("@/components/dashboard/end-of-month-projection").then(m => ({ default: m.EndOfMonthProjection })))
+const MonthlySavings = lazy(() => import("@/components/dashboard/monthly-savings").then(m => ({ default: m.MonthlySavings })))
+const MonthlyComparison = lazy(() => import("@/components/dashboard/monthly-comparison").then(m => ({ default: m.MonthlyComparison })))
+const TopExpenses = lazy(() => import("@/components/dashboard/top-expenses").then(m => ({ default: m.TopExpenses })))
+const CoupleRanking = lazy(() => import("@/components/dashboard/couple-ranking").then(m => ({ default: m.CoupleRanking })))
+const PersonalExpensesSummary = lazy(() => import("@/components/dashboard/personal-expenses-summary").then(m => ({ default: m.PersonalExpensesSummary })))
 
-// Mock data for 50/30/20 rule chart
-const mockBudgetData = {
-  totalIncome: 12500,
-  essentials: 6000,    // 50% target = 6250
-  lifestyle: 3500,     // 30% target = 3750
-  investments: 2500,   // 20% target = 2500
-}
-
-// Mock data for weekly flow chart
-const mockWeeklyData = [
-  { week: "Sem 1", income: 3000, expense: 1800, balance: 1200 },
-  { week: "Sem 2", income: 2500, expense: 2200, balance: 300 },
-  { week: "Sem 3", income: 4000, expense: 1950, balance: 2050 },
-  { week: "Sem 4", income: 3000, expense: 1900, balance: 1100 },
-]
-
-// Mock transactions with user data
-const mockTransactions: Transaction[] = [
-  {
-    id: "1",
-    description: "Salário",
-    amount: 8000,
-    type: "income",
-    date: new Date("2026-01-05"),
-    userId: "1",
-    categoryId: "1",
-    category: { id: "1", name: "Salário", type: "income", color: "#34C759", userId: "1", createdAt: new Date(), updatedAt: new Date() },
-    user: { id: "1", name: "Alison", email: "alison@familia.com", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alison", createdAt: new Date(), updatedAt: new Date() },
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "2",
-    description: "Aluguel",
-    amount: 2500,
-    type: "expense",
-    date: new Date("2026-01-03"),
-    userId: "1",
-    categoryId: "5",
-    category: { id: "5", name: "Moradia", type: "expense", color: "#FF3B30", userId: "1", createdAt: new Date(), updatedAt: new Date() },
-    user: { id: "1", name: "Alison", email: "alison@familia.com", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alison", createdAt: new Date(), updatedAt: new Date() },
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "3",
-    description: "Supermercado",
-    amount: 650,
-    type: "expense",
-    date: new Date("2026-01-02"),
-    userId: "2",
-    categoryId: "6",
-    category: { id: "6", name: "Alimentação", type: "expense", color: "#FF9500", userId: "2", createdAt: new Date(), updatedAt: new Date() },
-    user: { id: "2", name: "Fernanda", email: "fernanda@familia.com", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Fernanda", createdAt: new Date(), updatedAt: new Date() },
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "4",
-    description: "Freelance projeto",
-    amount: 2500,
-    type: "income",
-    date: new Date("2026-01-01"),
-    userId: "1",
-    categoryId: "2",
-    category: { id: "2", name: "Freelance", type: "income", color: "#5856D6", userId: "1", createdAt: new Date(), updatedAt: new Date() },
-    user: { id: "1", name: "Alison", email: "alison@familia.com", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alison", createdAt: new Date(), updatedAt: new Date() },
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "5",
-    description: "Netflix + Spotify",
-    amount: 85,
-    type: "expense",
-    date: new Date("2025-12-28"),
-    userId: "2",
-    categoryId: "11",
-    category: { id: "11", name: "Assinaturas", type: "expense", color: "#8E8E93", userId: "2", createdAt: new Date(), updatedAt: new Date() },
-    user: { id: "2", name: "Fernanda", email: "fernanda@familia.com", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Fernanda", createdAt: new Date(), updatedAt: new Date() },
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-]
-
-// Mock goals with alerts
-const mockGoals: Goal[] = [
-  {
-    id: "1",
-    name: "Reserva de Emergência",
-    description: "6 meses de despesas",
-    type: "savings",
-    targetAmount: 50000,
-    currentAmount: 45000,
-    deadline: new Date("2026-02-15"),
-    status: "active",
-    userId: "1",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "2",
-    name: "Viagem de Férias",
-    description: "Viagem para Europa",
-    type: "savings",
-    targetAmount: 20000,
-    currentAmount: 12000,
-    deadline: new Date("2026-01-10"),
-    status: "active",
-    userId: "1",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "3",
-    name: "Troca do Carro",
-    description: "Entrada do carro novo",
-    type: "patrimony",
-    targetAmount: 30000,
-    currentAmount: 8500,
-    deadline: new Date("2026-06-01"),
-    status: "active",
-    userId: "1",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-]
-
-// Mock accounts with transactions and balance history
-const mockAccounts: (Account & {
-  transactions?: Transaction[]
-  balanceHistory?: { date: string; balance: number }[]
-})[] = [
-  {
-    id: "1",
-    name: "Nubank",
-    type: "checking",
-    balance: 8500,
-    color: "#5856D6",
-    userId: "1",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    transactions: [
-      { id: "t1", description: "Salário", amount: 8000, type: "income", date: new Date("2026-01-05"), userId: "1", createdAt: new Date(), updatedAt: new Date() },
-      { id: "t2", description: "Aluguel", amount: 2500, type: "expense", date: new Date("2026-01-03"), userId: "1", createdAt: new Date(), updatedAt: new Date() },
-      { id: "t3", description: "Supermercado", amount: 450, type: "expense", date: new Date("2026-01-02"), userId: "1", createdAt: new Date(), updatedAt: new Date() },
-    ],
-    balanceHistory: [
-      { date: "01/01", balance: 3500 },
-      { date: "05/01", balance: 11500 },
-      { date: "10/01", balance: 9000 },
-      { date: "15/01", balance: 8500 },
-      { date: "20/01", balance: 8200 },
-      { date: "25/01", balance: 8500 },
-    ],
-  },
-  {
-    id: "2",
-    name: "Itaú",
-    type: "checking",
-    balance: 12350,
-    color: "#FF9500",
-    userId: "2",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    transactions: [
-      { id: "t4", description: "Salário", amount: 6000, type: "income", date: new Date("2026-01-05"), userId: "2", createdAt: new Date(), updatedAt: new Date() },
-      { id: "t5", description: "Conta de Luz", amount: 280, type: "expense", date: new Date("2026-01-08"), userId: "2", createdAt: new Date(), updatedAt: new Date() },
-    ],
-    balanceHistory: [
-      { date: "01/01", balance: 6500 },
-      { date: "05/01", balance: 12500 },
-      { date: "10/01", balance: 12200 },
-      { date: "15/01", balance: 12350 },
-    ],
-  },
-  {
-    id: "3",
-    name: "Cartão Nubank",
-    type: "credit",
-    balance: 2850,
-    color: "#FF2D55",
-    userId: "1",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    transactions: [
-      { id: "t6", description: "Amazon", amount: 350, type: "expense", date: new Date("2026-01-06"), userId: "1", createdAt: new Date(), updatedAt: new Date() },
-      { id: "t7", description: "iFood", amount: 120, type: "expense", date: new Date("2026-01-04"), userId: "1", createdAt: new Date(), updatedAt: new Date() },
-    ],
-    balanceHistory: [
-      { date: "01/01", balance: 1500 },
-      { date: "05/01", balance: 2000 },
-      { date: "10/01", balance: 2500 },
-      { date: "15/01", balance: 2850 },
-    ],
-  },
-  {
-    id: "4",
-    name: "Poupança",
-    type: "savings",
-    balance: 15000,
-    color: "#34C759",
-    userId: "1",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    balanceHistory: [
-      { date: "01/01", balance: 14500 },
-      { date: "05/01", balance: 14600 },
-      { date: "10/01", balance: 14800 },
-      { date: "15/01", balance: 15000 },
-    ],
-  },
-]
-
-// Mock data for End of Month Projection
-const mockProjectionData = {
-  currentDayOfMonth: 7,
-  totalDaysInMonth: 31,
-  totalIncome: 12500,
-  currentExpenses: 4250,
-  averageDailyExpense: 607, // ~4250/7
-  previousMonths: [
-    { month: "Dezembro", projected: 3200, actual: 3850 },
-    { month: "Novembro", projected: 2800, actual: 2650 },
-    { month: "Outubro", projected: 3500, actual: 3100 },
-  ],
-}
-
-// Mock data for Monthly Savings
-const mockSavingsData = {
-  categorySavings: [
-    { categoryId: "1", categoryName: "Delivery", categoryColor: "#FF9500", budgetAmount: 600, spentAmount: 180, savedAmount: 420 },
-    { categoryId: "2", categoryName: "Lazer", categoryColor: "#5856D6", budgetAmount: 800, spentAmount: 520, savedAmount: 280 },
-    { categoryId: "3", categoryName: "Compras", categoryColor: "#FF2D55", budgetAmount: 500, spentAmount: 350, savedAmount: 150 },
-    { categoryId: "4", categoryName: "Assinaturas", categoryColor: "#8E8E93", budgetAmount: 200, spentAmount: 185, savedAmount: 15 },
-    { categoryId: "5", categoryName: "Transporte", categoryColor: "#FFCC00", budgetAmount: 400, spentAmount: 520, savedAmount: -120 },
-  ],
-  totalBudget: 2500,
-  totalSpent: 1755,
-}
-
-// Mock data for Monthly Comparison
-const mockComparisonData = [
-  { month: "Ago", income: 11000, expenses: 8200, investments: 1800, balance: 1000 },
-  { month: "Set", income: 11500, expenses: 7800, investments: 2000, balance: 1700 },
-  { month: "Out", income: 12000, expenses: 8500, investments: 2200, balance: 1300 },
-  { month: "Nov", income: 11800, expenses: 7600, investments: 2100, balance: 2100 },
-  { month: "Dez", income: 13500, expenses: 9200, investments: 2400, balance: 1900 },
-  { month: "Jan", income: 12500, expenses: 7850, investments: 2500, balance: 2150 },
-]
-
-// Mock data for Top Expenses
-const mockTopExpenses = {
-  expenses: [
-    { categoryId: "1", categoryName: "Moradia", categoryColor: "#FF3B30", currentAmount: 2500, previousAmount: 2500, percentage: 31.8 },
-    { categoryId: "2", categoryName: "Alimentação", categoryColor: "#FF9500", currentAmount: 1800, previousAmount: 1650, percentage: 22.9 },
-    { categoryId: "3", categoryName: "Transporte", categoryColor: "#FFCC00", currentAmount: 850, previousAmount: 920, percentage: 10.8 },
-    { categoryId: "4", categoryName: "Lazer", categoryColor: "#5856D6", currentAmount: 720, previousAmount: 580, percentage: 9.2 },
-    { categoryId: "5", categoryName: "Saúde", categoryColor: "#FF2D55", currentAmount: 650, previousAmount: 450, percentage: 8.3 },
-    { categoryId: "6", categoryName: "Educação", categoryColor: "#5AC8FA", currentAmount: 450, previousAmount: 450, percentage: 5.7 },
-    { categoryId: "7", categoryName: "Assinaturas", categoryColor: "#8E8E93", currentAmount: 280, previousAmount: 280, percentage: 3.6 },
-    { categoryId: "8", categoryName: "Compras", categoryColor: "#FF2D55", currentAmount: 350, previousAmount: 520, percentage: 4.5 },
-    { categoryId: "9", categoryName: "Outros", categoryColor: "#8E8E93", currentAmount: 250, previousAmount: 350, percentage: 3.2 },
-  ],
-  totalExpenses: 7850,
-}
-
-// Mock data for Couple Ranking
-const mockCoupleRanking = {
-  members: [
-    {
-      id: "1",
-      name: "Alison",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alison",
-      savedAmount: 380,
-      unnecessarySpent: 220,
-      streak: 3,
-      isWinner: true,
-    },
-    {
-      id: "2",
-      name: "Fernanda",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Fernanda",
-      savedAmount: 165,
-      unnecessarySpent: 435,
-      streak: 1,
-      isWinner: false,
-    },
-  ],
-  categoryName: "Delivery",
-}
-
-// Mock data for Personal Expenses Summary
-const mockPersonalExpensesData = {
-  members: [
-    {
-      id: "1",
-      name: "Alison",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alison",
-      personalExpense: 450, // Academia + outras despesas pessoais
-    },
-    {
-      id: "2",
-      name: "Fernanda",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Fernanda",
-      personalExpense: 620, // Roupas + outras despesas pessoais
-    },
-  ],
-  householdExpense: 6780, // Aluguel, Supermercado, Contas, etc.
-  totalExpense: 7850,
+// Loading skeleton for charts
+function ChartSkeleton({ className = "" }: { className?: string }) {
+  return (
+    <div className={`rounded-lg border bg-card p-6 ${className}`}>
+      <Skeleton className="h-6 w-32 mb-4" />
+      <Skeleton className="h-48 w-full" />
+    </div>
+  )
 }
 
 export default function DashboardPage() {
-  const { user, selectedPeriod } = useStore()
+  const {
+    user,
+    selectedPeriod,
+    transactions,
+    accounts,
+    goals,
+    categories,
+    familyMembers,
+  } = useStore()
 
   const MONTHS = [
     "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
     "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
   ]
 
+  // Filter transactions for the selected period
+  const periodTransactions = useMemo(() => {
+    return transactions.filter(t => {
+      const date = new Date(t.date)
+      return date.getMonth() === selectedPeriod.month && date.getFullYear() === selectedPeriod.year
+    })
+  }, [transactions, selectedPeriod])
+
+  // Calculate summary data from real transactions
+  const summaryData = useMemo(() => {
+    const totalIncome = periodTransactions
+      .filter(t => t.type === "income")
+      .reduce((sum, t) => sum + t.amount, 0)
+
+    const totalExpenses = periodTransactions
+      .filter(t => t.type === "expense")
+      .reduce((sum, t) => sum + t.amount, 0)
+
+    const totalBalance = accounts.reduce((sum, a) => sum + a.balance, 0)
+
+    // Calculate previous period (last month)
+    const prevMonth = selectedPeriod.month === 0 ? 11 : selectedPeriod.month - 1
+    const prevYear = selectedPeriod.month === 0 ? selectedPeriod.year - 1 : selectedPeriod.year
+
+    const prevTransactions = transactions.filter(t => {
+      const date = new Date(t.date)
+      return date.getMonth() === prevMonth && date.getFullYear() === prevYear
+    })
+
+    const previousIncome = prevTransactions
+      .filter(t => t.type === "income")
+      .reduce((sum, t) => sum + t.amount, 0)
+
+    const previousExpenses = prevTransactions
+      .filter(t => t.type === "expense")
+      .reduce((sum, t) => sum + t.amount, 0)
+
+    // Calculate previous balance (estimate)
+    const previousBalance = totalBalance - (totalIncome - totalExpenses)
+
+    return {
+      totalBalance,
+      previousBalance: previousBalance > 0 ? previousBalance : 0,
+      totalIncome,
+      previousIncome,
+      totalExpenses,
+      previousExpenses,
+      totalInvested: 0, // Would need investments data
+      previousInvested: 0,
+    }
+  }, [periodTransactions, accounts, transactions, selectedPeriod])
+
+  // Calculate budget rule data (50/30/20)
+  const budgetData = useMemo(() => {
+    const totalIncome = summaryData.totalIncome || 1 // Avoid division by zero
+
+    let essentials = 0
+    let lifestyle = 0
+    let investments = 0
+
+    periodTransactions
+      .filter(t => t.type === "expense")
+      .forEach(t => {
+        const category = categories.find(c => c.id === t.categoryId)
+        if (category) {
+          const catName = category.name.toLowerCase()
+          if (['moradia', 'alimentação', 'transporte', 'saúde', 'educação'].some(e => catName.includes(e))) {
+            essentials += t.amount
+          } else if (['investimento', 'renda fixa', 'ações', 'fundos', 'cripto'].some(e => catName.includes(e))) {
+            investments += t.amount
+          } else {
+            lifestyle += t.amount
+          }
+        } else {
+          lifestyle += t.amount
+        }
+      })
+
+    return {
+      totalIncome,
+      essentials,
+      lifestyle,
+      investments,
+    }
+  }, [periodTransactions, categories, summaryData.totalIncome])
+
+  // Calculate weekly flow data
+  const weeklyData = useMemo(() => {
+    const weeks: { week: string; income: number; expense: number; balance: number }[] = []
+    const daysInMonth = new Date(selectedPeriod.year, selectedPeriod.month + 1, 0).getDate()
+
+    for (let w = 0; w < 4; w++) {
+      const weekStart = w * 7 + 1
+      const weekEnd = Math.min((w + 1) * 7, daysInMonth)
+
+      const weekTransactions = periodTransactions.filter(t => {
+        const date = new Date(t.date)
+        const day = date.getDate()
+        return day >= weekStart && day <= weekEnd
+      })
+
+      const income = weekTransactions
+        .filter(t => t.type === "income")
+        .reduce((sum, t) => sum + t.amount, 0)
+
+      const expense = weekTransactions
+        .filter(t => t.type === "expense")
+        .reduce((sum, t) => sum + t.amount, 0)
+
+      weeks.push({
+        week: `Sem ${w + 1}`,
+        income,
+        expense,
+        balance: income - expense,
+      })
+    }
+
+    return weeks
+  }, [periodTransactions, selectedPeriod])
+
+  // Get recent transactions (last 5)
+  const recentTransactions = useMemo(() => {
+    return [...periodTransactions]
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 5)
+  }, [periodTransactions])
+
+  // Get active goals with alerts
+  const goalAlerts = useMemo(() => {
+    return goals.filter(g => g.status === "active")
+  }, [goals])
+
+  // Accounts with extended data for summary
+  const accountsWithHistory: (Account & {
+    transactions?: Transaction[]
+    balanceHistory?: { date: string; balance: number }[]
+  })[] = useMemo(() => {
+    return accounts.map(account => {
+      const accountTransactions = periodTransactions.filter(t => t.accountId === account.id)
+      return {
+        ...account,
+        transactions: accountTransactions,
+        balanceHistory: [], // Would need historical data
+      }
+    })
+  }, [accounts, periodTransactions])
+
+  // Calculate projection data
+  const projectionData = useMemo(() => {
+    const now = new Date()
+    const currentDayOfMonth = now.getDate()
+    const totalDaysInMonth = new Date(selectedPeriod.year, selectedPeriod.month + 1, 0).getDate()
+    const averageDailyExpense = currentDayOfMonth > 0
+      ? summaryData.totalExpenses / currentDayOfMonth
+      : 0
+
+    return {
+      currentDayOfMonth,
+      totalDaysInMonth,
+      totalIncome: summaryData.totalIncome,
+      currentExpenses: summaryData.totalExpenses,
+      averageDailyExpense: Math.round(averageDailyExpense),
+      previousMonths: [], // Would need historical data
+    }
+  }, [selectedPeriod, summaryData])
+
+  // Calculate savings data by category
+  const savingsData = useMemo(() => {
+    const categorySpending: Record<string, { spent: number; budget: number; name: string; color: string }> = {}
+
+    periodTransactions
+      .filter(t => t.type === "expense")
+      .forEach(t => {
+        const category = categories.find(c => c.id === t.categoryId)
+        if (category) {
+          if (!categorySpending[category.id]) {
+            categorySpending[category.id] = {
+              spent: 0,
+              budget: 0, // Would need budget data
+              name: category.name,
+              color: category.color || "#8E8E93",
+            }
+          }
+          const catEntry = categorySpending[category.id]
+          if (catEntry) {
+            catEntry.spent += t.amount
+          }
+        }
+      })
+
+    const categorySavings = Object.entries(categorySpending).map(([id, data]) => ({
+      categoryId: id,
+      categoryName: data.name,
+      categoryColor: data.color,
+      budgetAmount: data.budget,
+      spentAmount: data.spent,
+      savedAmount: data.budget - data.spent,
+    }))
+
+    return {
+      categorySavings,
+      totalBudget: categorySavings.reduce((sum, c) => sum + c.budgetAmount, 0),
+      totalSpent: categorySavings.reduce((sum, c) => sum + c.spentAmount, 0),
+    }
+  }, [periodTransactions, categories])
+
+  // Calculate monthly comparison data (last 6 months)
+  const comparisonData = useMemo(() => {
+    const data: { month: string; income: number; expenses: number; investments: number; balance: number }[] = []
+    const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
+
+    for (let i = 5; i >= 0; i--) {
+      let month = selectedPeriod.month - i
+      let year = selectedPeriod.year
+
+      while (month < 0) {
+        month += 12
+        year -= 1
+      }
+
+      const monthTransactions = transactions.filter(t => {
+        const date = new Date(t.date)
+        return date.getMonth() === month && date.getFullYear() === year
+      })
+
+      const income = monthTransactions
+        .filter(t => t.type === "income")
+        .reduce((sum, t) => sum + t.amount, 0)
+
+      const expenses = monthTransactions
+        .filter(t => t.type === "expense")
+        .reduce((sum, t) => sum + t.amount, 0)
+
+      data.push({
+        month: monthNames[month] ?? "???",
+        income,
+        expenses,
+        investments: 0,
+        balance: income - expenses,
+      })
+    }
+
+    return data
+  }, [transactions, selectedPeriod])
+
+  // Calculate top expenses
+  const topExpensesData = useMemo(() => {
+    const categoryTotals: Record<string, { current: number; previous: number; name: string; color: string }> = {}
+    const totalExpenses = summaryData.totalExpenses || 1
+
+    // Current period
+    periodTransactions
+      .filter(t => t.type === "expense")
+      .forEach(t => {
+        const category = categories.find(c => c.id === t.categoryId)
+        if (category) {
+          if (!categoryTotals[category.id]) {
+            categoryTotals[category.id] = {
+              current: 0,
+              previous: 0,
+              name: category.name,
+              color: category.color || "#8E8E93",
+            }
+          }
+          const entry = categoryTotals[category.id]
+          if (entry) {
+            entry.current += t.amount
+          }
+        }
+      })
+
+    const expenses = Object.entries(categoryTotals)
+      .map(([id, data]) => ({
+        categoryId: id,
+        categoryName: data.name,
+        categoryColor: data.color,
+        currentAmount: data.current,
+        previousAmount: data.previous,
+        percentage: (data.current / totalExpenses) * 100,
+      }))
+      .sort((a, b) => b.currentAmount - a.currentAmount)
+      .slice(0, 9)
+
+    return {
+      expenses,
+      totalExpenses: summaryData.totalExpenses,
+    }
+  }, [periodTransactions, categories, summaryData.totalExpenses])
+
+  // Calculate couple ranking (if family members exist)
+  const coupleRanking = useMemo(() => {
+    const allMembers = user ? [user, ...familyMembers] : familyMembers
+
+    const members = allMembers.slice(0, 2).map(member => {
+      const memberExpenses = periodTransactions
+        .filter(t => t.type === "expense" && t.userId === member.id)
+        .reduce((sum, t) => sum + t.amount, 0)
+
+      return {
+        id: member.id,
+        name: member.name,
+        avatar: member.avatar || "",
+        savedAmount: 0, // Would need budget data
+        unnecessarySpent: memberExpenses,
+        streak: 0,
+        isWinner: false,
+      }
+    })
+
+    // Mark winner (lowest unnecessary spending)
+    const member0 = members[0]
+    const member1 = members[1]
+    if (member0 && member1) {
+      const winnerIndex = member0.unnecessarySpent <= member1.unnecessarySpent ? 0 : 1
+      const winner = members[winnerIndex]
+      if (winner) {
+        winner.isWinner = true
+      }
+    }
+
+    return {
+      members,
+      categoryName: "Gastos",
+    }
+  }, [periodTransactions, user, familyMembers])
+
+  // Calculate personal expenses summary
+  const personalExpensesData = useMemo(() => {
+    const allMembers = user ? [user, ...familyMembers] : familyMembers
+    let householdExpense = 0
+
+    const members = allMembers.slice(0, 2).map(member => {
+      const memberPersonalExpense = periodTransactions
+        .filter(t => t.type === "expense" && t.userId === member.id && t.ownership === "personal")
+        .reduce((sum, t) => sum + t.amount, 0)
+
+      const memberHouseholdExpense = periodTransactions
+        .filter(t => t.type === "expense" && t.userId === member.id && t.ownership !== "personal")
+        .reduce((sum, t) => sum + t.amount, 0)
+
+      householdExpense += memberHouseholdExpense
+
+      return {
+        id: member.id,
+        name: member.name,
+        avatar: member.avatar || "",
+        personalExpense: memberPersonalExpense,
+      }
+    })
+
+    return {
+      members,
+      householdExpense,
+      totalExpense: summaryData.totalExpenses,
+    }
+  }, [periodTransactions, user, familyMembers, summaryData.totalExpenses])
+
   return (
     <div className="space-y-8 page-transition">
       {/* Header */}
       <div>
         <h1 className="text-display">
-          Olá, {user?.name || "Alison"}
+          Olá, {user?.name || "Usuário"}
         </h1>
         <p className="text-callout text-secondary mt-1">
           Aqui está o resumo das suas finanças em {MONTHS[selectedPeriod.month]} de {selectedPeriod.year}
@@ -362,27 +417,31 @@ export default function DashboardPage() {
       </div>
 
       {/* Summary Cards */}
-      <SummaryCards {...mockSummaryData} />
+      <SummaryCards {...summaryData} />
 
       {/* Accounts Summary */}
-      <AccountsSummary accounts={mockAccounts} />
+      <AccountsSummary accounts={accountsWithHistory} />
 
       {/* Charts Row */}
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Weekly Flow Chart - takes 2 columns */}
-        <WeeklyFlowChart data={mockWeeklyData} />
+        <Suspense fallback={<ChartSkeleton className="lg:col-span-2" />}>
+          <WeeklyFlowChart data={weeklyData} />
+        </Suspense>
 
         {/* Budget Rule Chart - takes 1 column */}
-        <BudgetRuleChart {...mockBudgetData} />
+        <Suspense fallback={<ChartSkeleton />}>
+          <BudgetRuleChart {...budgetData} />
+        </Suspense>
       </div>
 
       {/* Bottom Row */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Recent Transactions */}
-        <RecentTransactions transactions={mockTransactions} />
+        <RecentTransactions transactions={recentTransactions} />
 
         {/* Goal Alerts */}
-        <GoalAlerts goals={mockGoals} />
+        <GoalAlerts goals={goalAlerts} />
       </div>
 
       {/* Insights Section */}
@@ -396,27 +455,35 @@ export default function DashboardPage() {
 
         {/* Insights Row 1 - Projection and Savings */}
         <div className="grid gap-6 lg:grid-cols-2">
-          {/* End of Month Projection */}
-          <EndOfMonthProjection {...mockProjectionData} />
+          <Suspense fallback={<ChartSkeleton />}>
+            <EndOfMonthProjection {...projectionData} />
+          </Suspense>
 
-          {/* Monthly Savings */}
-          <MonthlySavings {...mockSavingsData} />
+          <Suspense fallback={<ChartSkeleton />}>
+            <MonthlySavings {...savingsData} />
+          </Suspense>
         </div>
 
         {/* Insights Row 2 - Monthly Comparison (full width) */}
-        <MonthlyComparison data={mockComparisonData} />
+        <Suspense fallback={<ChartSkeleton />}>
+          <MonthlyComparison data={comparisonData} />
+        </Suspense>
 
         {/* Insights Row 3 - Top Expenses and Personal Expenses */}
         <div className="grid gap-6 lg:grid-cols-2">
-          {/* Top Expenses */}
-          <TopExpenses {...mockTopExpenses} />
+          <Suspense fallback={<ChartSkeleton />}>
+            <TopExpenses {...topExpensesData} />
+          </Suspense>
 
-          {/* Personal vs Household Expenses */}
-          <PersonalExpensesSummary {...mockPersonalExpensesData} />
+          <Suspense fallback={<ChartSkeleton />}>
+            <PersonalExpensesSummary {...personalExpensesData} />
+          </Suspense>
         </div>
 
         {/* Insights Row 4 - Couple Ranking */}
-        <CoupleRanking {...mockCoupleRanking} />
+        <Suspense fallback={<ChartSkeleton />}>
+          <CoupleRanking {...coupleRanking} />
+        </Suspense>
       </div>
     </div>
   )

@@ -38,13 +38,13 @@ export function MonthlyComparison({ data, className }: MonthlyComparisonProps) {
   const currentMonth = data[data.length - 1]
   const previousMonth = data[data.length - 2]
 
-  const incomeTrend = previousMonth
+  const incomeTrend = previousMonth && currentMonth
     ? ((currentMonth.income - previousMonth.income) / previousMonth.income) * 100
     : 0
-  const expensesTrend = previousMonth
+  const expensesTrend = previousMonth && currentMonth
     ? ((currentMonth.expenses - previousMonth.expenses) / previousMonth.expenses) * 100
     : 0
-  const investmentsTrend = previousMonth
+  const investmentsTrend = previousMonth && currentMonth
     ? ((currentMonth.investments - previousMonth.investments) / previousMonth.investments) * 100
     : 0
 
@@ -228,7 +228,7 @@ export function MonthlyComparison({ data, className }: MonthlyComparisonProps) {
               <TrendIndicator value={incomeTrend} />
             </div>
             <p className="text-lg font-semibold text-emerald-500">
-              {formatCurrency(currentMonth.income)}
+              {formatCurrency(currentMonth?.income ?? 0)}
             </p>
             <p className="text-xs text-muted-foreground">
               Média: {formatCurrency(avgIncome)}
@@ -242,7 +242,7 @@ export function MonthlyComparison({ data, className }: MonthlyComparisonProps) {
               <TrendIndicator value={expensesTrend} inverted />
             </div>
             <p className="text-lg font-semibold text-rose-500">
-              {formatCurrency(currentMonth.expenses)}
+              {formatCurrency(currentMonth?.expenses ?? 0)}
             </p>
             <p className="text-xs text-muted-foreground">
               Média: {formatCurrency(avgExpenses)}
@@ -256,7 +256,7 @@ export function MonthlyComparison({ data, className }: MonthlyComparisonProps) {
               <TrendIndicator value={investmentsTrend} />
             </div>
             <p className="text-lg font-semibold text-blue-500">
-              {formatCurrency(currentMonth.investments)}
+              {formatCurrency(currentMonth?.investments ?? 0)}
             </p>
             <p className="text-xs text-muted-foreground">
               Média: {formatCurrency(avgInvestments)}
@@ -266,18 +266,18 @@ export function MonthlyComparison({ data, className }: MonthlyComparisonProps) {
 
         {/* Trend analysis */}
         <div className="p-3 rounded-lg bg-muted/50 text-sm">
-          {currentMonth.balance > previousMonth?.balance ? (
+          {(currentMonth?.balance ?? 0) > (previousMonth?.balance ?? 0) ? (
             <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
               <TrendingUp className="h-4 w-4" />
               <span>
-                Saldo {formatCurrency(currentMonth.balance - previousMonth.balance)} maior que o mês passado
+                Saldo {formatCurrency((currentMonth?.balance ?? 0) - (previousMonth?.balance ?? 0))} maior que o mês passado
               </span>
             </div>
-          ) : currentMonth.balance < previousMonth?.balance ? (
+          ) : (currentMonth?.balance ?? 0) < (previousMonth?.balance ?? 0) ? (
             <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400">
               <TrendingDown className="h-4 w-4" />
               <span>
-                Saldo {formatCurrency(previousMonth.balance - currentMonth.balance)} menor que o mês passado
+                Saldo {formatCurrency((previousMonth?.balance ?? 0) - (currentMonth?.balance ?? 0))} menor que o mês passado
               </span>
             </div>
           ) : (

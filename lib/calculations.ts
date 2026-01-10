@@ -109,11 +109,13 @@ export function calculateGoalProgress(
     const firstEntry = sortedHistory[0]
     const lastEntry = sortedHistory[sortedHistory.length - 1]
 
-    const monthsDiff =
-      (lastEntry.date.getTime() - firstEntry.date.getTime()) / (1000 * 60 * 60 * 24 * 30)
+    if (firstEntry && lastEntry) {
+      const monthsDiff =
+        (lastEntry.date.getTime() - firstEntry.date.getTime()) / (1000 * 60 * 60 * 24 * 30)
 
-    if (monthsDiff > 0) {
-      monthlyRate = (lastEntry.value - firstEntry.value) / monthsDiff
+      if (monthsDiff > 0) {
+        monthlyRate = (lastEntry.value - firstEntry.value) / monthsDiff
+      }
     }
   }
 
@@ -165,7 +167,8 @@ export function calculateInvestmentSummary(investments: Investment[]): Investmen
     if (!acc[inv.type]) {
       acc[inv.type] = 0
     }
-    acc[inv.type] += inv.currentPrice
+    const current = acc[inv.type] ?? 0
+    acc[inv.type] = current + inv.currentPrice
     return acc
   }, {} as Record<string, number>)
 
@@ -261,7 +264,10 @@ export function analyzeCategorySpending(
         amount: 0,
       }
     }
-    acc[t.category.id].amount += t.amount
+    const entry = acc[t.category.id]
+    if (entry) {
+      entry.amount += t.amount
+    }
     return acc
   }, {} as Record<string, { name: string; budget: number | null | undefined; amount: number }>)
 
@@ -275,7 +281,8 @@ export function analyzeCategorySpending(
     if (!acc[t.category.id]) {
       acc[t.category.id] = 0
     }
-    acc[t.category.id] += t.amount
+    const current = acc[t.category.id] ?? 0
+    acc[t.category.id] = current + t.amount
     return acc
   }, {} as Record<string, number>)
 

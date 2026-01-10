@@ -56,7 +56,10 @@ export function CategorySelect({
       if (!groups[cat.tipo]) {
         groups[cat.tipo] = []
       }
-      groups[cat.tipo].push(cat)
+      const group = groups[cat.tipo]
+      if (group) {
+        group.push(cat)
+      }
     })
 
     return groups

@@ -185,7 +185,7 @@ export function getContrastRatio(color1: string, color2: string): number {
   const getLuminance = (hslString: string): number => {
     // Extract lightness from HSL
     const match = hslString.match(/(\d+(?:\.\d+)?)\s*%\s*\)/)
-    if (!match) return 0.5
+    if (!match?.[1]) return 0.5
     return parseFloat(match[1]) / 100
   }
 

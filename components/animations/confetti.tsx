@@ -52,7 +52,7 @@ export function Confetti({
         (_, i) => ({
           id: i,
           x: Math.random() * 100, // % position
-          color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
+          color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)] ?? "#FFD700",
           delay: Math.random() * 500,
           duration: 2000 + Math.random() * 1000,
           size: 8 + Math.random() * 8,
