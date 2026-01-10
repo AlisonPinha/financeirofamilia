@@ -2,9 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/supabase/auth-helper";
 import OpenAI from "openai";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Lazy initialization - only create client when API is called
+let openaiClient: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI | null {
+  if (!process.env.OPENAI_API_KEY) {
+    return null;
+  }
+  if (!openaiClient) {
+    openaiClient = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+  return openaiClient;
+}
 
 interface ExtractedTransaction {
   descricao: string;
@@ -26,8 +37,9 @@ export async function POST(request: NextRequest) {
     const auth = await getAuthenticatedUser();
     if (auth.error) return auth.error;
 
-    // Verificar se API key está configurada
-    if (!process.env.OPENAI_API_KEY) {
+    // Verificar se API key está configurada (lazy initialization)
+    const openai = getOpenAIClient();
+    if (!openai) {
       return NextResponse.json(
         { error: "Serviço de OCR não configurado" },
         { status: 503 }
